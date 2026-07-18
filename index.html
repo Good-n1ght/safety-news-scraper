@@ -2017,6 +2017,13 @@ function fetchNews() {
     var allMerged = rssItems.concat(toutiaoItems).concat(baiduItems);
     allMerged.forEach(function(item) { item.title = truncateTitle(item.title); });
     newsItems = rankNews(allMerged);
+    // 全局按日期降序（最新在前），同日期内按评分排序
+    newsItems.sort(function(a, b) {
+      var da = a.pubDate || "", db = b.pubDate || "";
+      if (da > db) return -1;
+      if (da < db) return 1;
+      return (b._score || 0) - (a._score || 0);
+    });
 
     renderNews();
     els.fetchBtn.disabled = false;
