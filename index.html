@@ -1689,6 +1689,13 @@ function loadEmbeddedNews() {
         _originalTitle: title
       };
     });
+    // 按日期降序排列（最新在前）
+    newsItems.sort(function(a, b) {
+      var da = a.pubDate || "", db = b.pubDate || "";
+      if (da > db) return -1;
+      if (da < db) return 1;
+      return 0;
+    });
     renderNews();
     setStatus("success", "已加载 " + newsItems.length + " 条预抓取新闻，可选分类过滤后点击「批量标题优化」");
     els.countText.textContent = "共 " + newsItems.length + " 条";
