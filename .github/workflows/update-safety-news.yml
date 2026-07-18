@@ -9,6 +9,9 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
 
     steps:
       - name: 检出仓库
@@ -17,13 +20,11 @@ jobs:
       - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
-          cache-dependency-path: scripts/package-lock.json
+          node-version: "22"
 
       - name: 安装依赖
         working-directory: scripts
-        run: npm ci
+        run: npm install
 
       - name: 执行抓取
         working-directory: scripts
