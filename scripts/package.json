@@ -1,0 +1,15 @@
+{
+  "name": "safety-news-scraper",
+  "version": "1.0.0",
+  "description": "云端安全新闻抓取脚本 — 7 站 Bing 搜索 → 正文抓取 → 推送 Gist",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "scrape": "node scrape-safety-news.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  }
+}

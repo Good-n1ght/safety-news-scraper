@@ -1,0 +1,46 @@
+name: 更新安全新闻素材
+
+# 每天北京时间 8:00 (UTC 00:00) 自动执行
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: 安装依赖
+        working-directory: scripts
+        run: npm ci
+
+      - name: 执行抓取
+        working-directory: scripts
+        run: node scrape-safety-news.js
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+
+      - name: 通知失败
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ 安全新闻抓取管道失败 (${new Date().toISOString().slice(0, 10)})`,
+              body: `今日自动抓取任务执行失败。\n\n[查看日志](${runUrl})\n\n请检查 Actions 详情确认原因：代理/网络/Bing 限流等。`,
+              labels: ["bug"],
+            });
