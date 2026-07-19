@@ -579,7 +579,104 @@ select:focus {
   }
 
   .secondary-action {
-    width: 118px;
+    width: auto;
+    flex: 1;
+  }
+
+  .section-head {
+    flex-wrap: wrap;
+  }
+
+  .section-head > div {
+    flex-wrap: wrap;
+  }
+
+  .text-button {
+    white-space: normal;
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-head h2 {
+    font-size: 16px;
+  }
+
+  .section-head > div {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .text-button {
+    font-size: 11px;
+    padding: 5px 9px;
+  }
+
+  .secondary-action {
+    font-size: 13px;
+    min-height: 38px;
+  }
+
+  .form-grid {
+    gap: 8px;
+  }
+
+  .form-grid label select {
+    width: 100%;
+    font-size: 13px;
+  }
+
+  .primary-action {
+    font-size: 15px;
+    min-height: 42px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .topbar h1 {
+    font-size: 18px;
+  }
+
+  .compose-panel,
+  .material-panel,
+  .result-panel {
+    padding: 10px;
+  }
+
+  .search-input {
+    font-size: 13px;
+  }
+
+  .tab {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .tabs {
+    gap: 4px;
+  }
+
+  .metric span {
+    font-size: 17px;
+  }
+
+  .metric p {
+    font-size: 11px;
+  }
+
+  .btn {
+    font-size: 12px;
+    padding: 0 10px;
+    height: 34px;
   }
 }
 
