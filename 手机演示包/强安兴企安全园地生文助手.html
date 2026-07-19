@@ -1130,7 +1130,7 @@ select:focus {
     </div>
     <div class="setting-row">
       <label class="setting-label">历史稿件存储（Gist）</label>
-      <input type="text" id="gistIdInput" placeholder="Gist ID（如 eb0fea051748ee8b3307bf7bd16be4a）" style="margin-bottom:8px;" />
+      <input type="text" id="gistIdInput" placeholder="Gist ID（如 eb0fea051748ee0b33070cf7bd16be4a）" style="margin-bottom:8px;" />
       <input type="password" id="gistTokenInput" placeholder="GitHub Token（需 gist 权限）" />
       <p class="hint">首次使用需先创建 <a href="https://gist.github.com" target="_blank" rel="noopener">Gist</a> 并生成 <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">GitHub Token</a></p>
     </div>
@@ -1188,9 +1188,9 @@ window.DS_API_MODEL     = null;
   if (info && info.apiModel)     window.DS_API_MODEL = info.apiModel;
 })();
 /* ---------- Gist 配置 ---------- */
-window.GIST_ID    = localStorage.getItem("gist_id")    || "eb0fea051748ee8b3307bf7bd16be4a";
+window.GIST_ID    = localStorage.getItem("gist_id")    || "eb0fea051748ee0b33070cf7bd16be4a";
 window.GIST_TOKEN = localStorage.getItem("gist_token") || "";
-window.GIST_RAW   = "https://gist.githubusercontent.com/Good-n1ght/" + window.GIST_ID + "/raw/safety_news.json";
+window.GIST_RAW   = "https://gist.githubusercontent.com/Good-n1ght/" + window.GIST_ID + "/raw/drafts.json";
 /* ---------- 工具函数 ---------- */
 function showToast(msg) {
   var toast = document.getElementById("toast");
