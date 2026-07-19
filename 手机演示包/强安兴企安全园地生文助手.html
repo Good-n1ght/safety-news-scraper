@@ -1285,7 +1285,6 @@ window.DS_API_MODEL     = null;
 })();
 /* ---------- Gist 配置 ---------- */
 window.GIST_ID    = localStorage.getItem("gist_id")    || "eb0fea051748ee0b33070cf7bd16be4a";
-window.GIST_TOKEN = localStorage.getItem("gist_token") || "";
 window.GIST_RAW   = "https://gist.githubusercontent.com/Good-n1ght/" + window.GIST_ID + "/raw/drafts.json";
 var HISTORY_SAVE_API = "https://1437883484-k88upcj3r3.ap-guangzhou.tencentscf.com/save-draft";
 /* ---------- 工具函数 ---------- */
@@ -1323,8 +1322,7 @@ function initSettings() {
     modelSelect: document.getElementById("modelSelect"),
     apiKeyInput: document.getElementById("apiKeyInput"),
     baseUrlInput: document.getElementById("baseUrlInput"),
-    gistIdInput: document.getElementById("gistIdInput"),
-    gistTokenInput: document.getElementById("gistTokenInput")
+    gistIdInput: document.getElementById("gistIdInput")
   };
 
   if (!els.settingsBtn || !els.settingsOverlay) return;
@@ -1333,7 +1331,6 @@ function initSettings() {
   if (els.apiKeyInput) els.apiKeyInput.value = window.DS_API_KEY || "";
   if (els.baseUrlInput) els.baseUrlInput.value = window.DS_BASE_URL || DEFAULT_BASE_URL;
   if (els.gistIdInput) els.gistIdInput.value = window.GIST_ID || "";
-  if (els.gistTokenInput) els.gistTokenInput.value = window.GIST_TOKEN || "";
 
   // ---- 两级模型选择器 ----
   var savedModel = window.DS_MODEL || DEFAULT_MODEL;

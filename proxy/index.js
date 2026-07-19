@@ -39,7 +39,9 @@ app.get("/", (req, res) => {
 });
 
 // ========== 路由 2：保存历史文章到 Gist ==========
-app.post("/save-draft", (req, res) => {
+// 提取为独立 handler，同时注册到 /save-draft 和 POST / 两条路径
+// 原因：SCF API 网关可能将 /save-draft 路径映射到 /，导致 Express 路由无法匹配
+function handleSaveDraft(req, res) {
   if (!GIST_TOKEN) {
     return res.status(500).json({ ok: false, error: "服务器未配置 GIST_TOKEN" });
   }
@@ -102,7 +104,11 @@ app.post("/save-draft", (req, res) => {
   .catch(e => {
     res.status(500).json({ ok: false, error: e.message });
   });
-});
+}
+
+// 注册 save-draft 路由（两条路径双保险）
+app.post("/save-draft", handleSaveDraft);
+app.post("/", handleSaveDraft);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("CORS proxy + save-draft on port " + PORT));
