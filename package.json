@@ -1,0 +1,16 @@
+{
+  "name": "safety-graph-assistant",
+  "version": "1.0.0",
+  "description": "CORS proxy for safety graph assistant",
+  "main": "index.js",
+  "scripts": {
+    "start": "node proxy/index.js",
+    "install-deps": "cd proxy && npm install"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
