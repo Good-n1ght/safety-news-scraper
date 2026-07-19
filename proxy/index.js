@@ -1,6 +1,9 @@
 const express = require("express");
 const app = express();
 
+// 环境变量：Gist Token
+const GIST_TOKEN = process.env.GIST_TOKEN || "";
+
 // 全局 CORS
 app.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -37,10 +40,14 @@ app.get("/", (req, res) => {
 
 // ========== 路由 2：保存历史文章到 Gist ==========
 app.post("/save-draft", (req, res) => {
-  const { gist_id, token, article } = req.body;
+  if (!GIST_TOKEN) {
+    return res.status(500).json({ ok: false, error: "服务器未配置 GIST_TOKEN" });
+  }
 
-  if (!gist_id || !token || !article) {
-    return res.status(400).json({ ok: false, error: "Missing gist_id, token, or article" });
+  const { gist_id, article } = req.body;
+
+  if (!gist_id || !article) {
+    return res.status(400).json({ ok: false, error: "Missing gist_id or article" });
   }
 
   const apiUrl = `https://api.github.com/gists/${gist_id}`;
@@ -48,7 +55,7 @@ app.post("/save-draft", (req, res) => {
   // 先取现有 drafts.json
   fetch(apiUrl, {
     headers: {
-      "Authorization": `Bearer ${token}`,
+      "Authorization": `Bearer ${GIST_TOKEN}`,
       "Accept": "application/vnd.github.v3+json"
     }
   })
@@ -74,7 +81,7 @@ app.post("/save-draft", (req, res) => {
     return fetch(apiUrl, {
       method: "PATCH",
       headers: {
-        "Authorization": `Bearer ${token}`,
+        "Authorization": `Bearer ${GIST_TOKEN}`,
         "Accept": "application/vnd.github.v3+json",
         "Content-Type": "application/json"
       },
