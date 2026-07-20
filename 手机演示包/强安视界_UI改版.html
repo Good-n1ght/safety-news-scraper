@@ -198,18 +198,7 @@ button:disabled { cursor: wait; opacity: 0.7; }
   vertical-align: middle;
   margin-left: 4px;
 }
-.badge-hot {
-  display: inline-block;
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: #fff3e0;
-  color: #e65100;
-  font-weight: 700;
-  vertical-align: middle;
-  margin-left: 4px;
-  cursor: default;
-}
+
 .mode-toggle {
   display: inline-flex;
   align-items: center;
@@ -700,8 +689,7 @@ body {
 }
 
 .news-category,
-.badge-ai,
-.badge-hot {
+.badge-ai {
   border-radius: 6px;
 }
 
@@ -1202,6 +1190,17 @@ window.DS_API_KEY     = localStorage.getItem("ds_api_key")     || DEFAULT_API_KE
 window.DS_MODEL       = localStorage.getItem("ds_model")       || DEFAULT_MODEL;
 window.DS_BASE_URL    = localStorage.getItem("ds_base_url")    || DEFAULT_BASE_URL;
 window.PEXELS_API_KEY = localStorage.getItem("pexels_api_key") || "";
+window.DS_CHAT_ENDPOINT = null;
+window.DS_API_MODEL     = null;
+
+function refreshModelRuntime(modelId) {
+  window.DS_CHAT_ENDPOINT = null;
+  window.DS_API_MODEL = null;
+  var info = (typeof MODEL_MAP !== "undefined" && MODEL_MAP[modelId]) ? MODEL_MAP[modelId] : null;
+  if (info && info.chatEndpoint) window.DS_CHAT_ENDPOINT = info.chatEndpoint;
+  if (info && info.apiModel) window.DS_API_MODEL = info.apiModel;
+}
+refreshModelRuntime(window.DS_MODEL);
 
 /* ---------- 工具函数 ---------- */
 function showToast(msg) {
@@ -1230,9 +1229,10 @@ function getApiKey() {
 /* ---------- AI API 通用调用 ---------- */
 function callDeepSeekDraft(params) {
   var baseUrl = getApiBase();
+  var chatUrl = window.DS_CHAT_ENDPOINT || (baseUrl + "/v1/chat/completions");
   var systemPrompt = params.systemPrompt;
   var userPrompt = params.userPrompt;
-  var model = window.DS_MODEL || DEFAULT_MODEL;
+  var model = window.DS_API_MODEL || window.DS_MODEL || DEFAULT_MODEL;
   var maxTokens = params.maxTokens || gd("max_tokens", 3600);
   var temperature = (params.temperature !== undefined) ? params.temperature : gd("temperature", 0.7);
   var useJsonFormat = (params.jsonFormat !== false);
@@ -1251,7 +1251,7 @@ function callDeepSeekDraft(params) {
     body.response_format = { type: "json_object" };
   }
 
-  return fetch(baseUrl + "/v1/chat/completions", {
+  return fetch(chatUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1435,6 +1435,7 @@ function initSettings() {
 
     localStorage.setItem("ds_model", newModel);
     window.DS_MODEL = newModel;
+    refreshModelRuntime(newModel);
 
     if (newBaseUrl) {
       localStorage.setItem("ds_base_url", newBaseUrl);
@@ -1513,7 +1514,7 @@ var BAIDU_PER_TAB = 10;   // 百度热榜每个分类榜取前10条
 var BAIDU_MAX_RAW = 40;   // 百度热榜最多取40条原始数据
 var BAIDU_MAX_KEEP = 30;  // 过滤后最多保留30条
 /* CORS 代理 —— 头条 API 不返回 Access-Control-Allow-Origin，通过本地代理中转（运行 toutiao_proxy.py） */
-var CORS_PROXY = "https://1437883484-k88upcj3r3.ap-guangzhou.tencentscf.com/?url=";
+var CORS_PROXY = "https://1437883484-b850njs6yb.ap-guangzhou.tencentscf.com/?url=";
 
 /* 娱乐类屏蔽关键词（无条件屏蔽） */
 var BLOCK_KEYWORDS = [
@@ -2098,13 +2099,6 @@ function renderNews() {
       var displayTitle = rewrittenCache[item.id] || item.title;
       var aiBadge = rewrittenCache[item.id] ? ' <span class="badge-ai">AI</span>' : "";
       var hotBadge = "";
-      if (item.heat && item.heat > 0) {
-        var hotTips = (item.hot_matches && item.hot_matches.length) ? item.hot_matches.slice(0, 3).join("、") : "";
-        hotBadge = ' <span class="badge-hot" title="匹配热搜：' + escapeHtml(hotTips) + '">热度 ' + item.heat + '</span>';
-      } else if (item.hotValue && item.hotValue > 0) {
-        var hotW = item.hotValue > 100000 ? Math.round(item.hotValue / 10000) + "万" : item.hotValue;
-        hotBadge = ' <span class="badge-hot" title="实时热值: ' + item.hotValue + '">热度 ' + hotW + '</span>';
-      }
       return '<div class="news-item' + selClass + '" data-id="' + item.id + '">' +
         '<input type="checkbox" class="news-checkbox" data-id="' + item.id + '" ' + checked + ' />' +
         '<div class="news-body">' +
@@ -2198,7 +2192,7 @@ function callAIRewrite(batchItems) {
 
   var userPrompt = "请改写以下新闻标题：\n" + titles + "\n\n请直接输出 JSON 数组，不要输出任何其他内容。";
 
-  return callDeepSeekDraft({systemPrompt: systemPrompt, userPrompt: userPrompt}).then(function(raw) {
+  return callDeepSeekDraft({systemPrompt: systemPrompt, userPrompt: userPrompt, jsonFormat: false}).then(function(raw) {
     try {
       var parsed = JSON.parse(raw);
       var result = [];
@@ -2264,6 +2258,12 @@ function generateArticles() {
   var selectedItems = newsItems.filter(function(item) { return selectedIds[item.id]; });
   if (!selectedItems.length) {
     showToast("请先勾选新闻");
+    return;
+  }
+
+  if (!getApiKey()) {
+    showToast("请先在设置面板中填写 API Key");
+    if (els.settingsBtn) els.settingsBtn.click();
     return;
   }
 

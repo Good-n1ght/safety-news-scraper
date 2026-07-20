@@ -1731,9 +1731,8 @@ function fetchArticleContent(item) {
       var fetchResultCtx = Hooks.trigger(Hooks.AFTER_FETCH, { url: item.link, content: item.content });
       item.content = fetchResultCtx.content;
       /* ======================= */
-      return item;
     })
-    .catch(function(err) { console.warn("抓取失败: " + item.link, err); item.content = item.summary; return item; })
+    .catch(function(err) { console.warn("抓取失败: " + item.link, err); item.content = item.summary; })
     .finally(function() { clearTimeout(timeout); });
 }
 

@@ -231,11 +231,11 @@
   <div style="max-width:860px;margin:48px auto 0">
     <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--slate)">当前局限</h3>
     <ul class="limit-list">
-      <li><span class="limit-bullet"></span><span class="limit-val">依赖 CORS 代理转发搜索请求，已配置腾讯云 SCF + allorigins.win 双代理自动 fallback</span></li>
-      <li><span class="limit-bullet"></span><span class="limit-val">Bing HTML 解析依赖页面 DOM 结构，搜索引擎改版可能导致搜索结果提取失败</span></li>
+      <li><span class="limit-bullet"></span><span class="limit-val">博查 API 免费额度 1000 次/月，超出需付费。当前使用量远低于限制</span></li>
+      <li><span class="limit-bullet"></span><span class="limit-val">搜索回退依赖通用搜索，自定义话题在安全站点无结果时走通用搜索兜底</span></li>
       <li><span class="limit-bullet"></span><span class="limit-val">生成质量受搜索结果影响较大——搜不到好内容则文章质量下降</span></li>
       <li><span class="limit-bullet"></span><span class="limit-val">API Key 存浏览器 localStorage，换设备需重新填写</span></li>
-      <li><span class="limit-bullet"></span><span class="limit-val">7 站采用 Promise.all 并发搜索，最慢约 15 秒，全站超时体验不佳</span></li>
+      <li><span class="limit-bullet"></span><span class="limit-val">自建 CORS 代理路线已放弃（SCF v1/v2/v3 均以崩溃告终），搜索改用博查 API，全文直接 fetch</span></li>
     </ul>
   </div>
 
@@ -313,8 +313,8 @@
 
   <div class="tech-table">
     <div class="tech-row"><span class="tech-key">前端架构</span><span class="tech-val">纯 HTML/CSS/JS，无框架，无构建，浏览器直接打开即可使用</span></div>
-    <div class="tech-row"><span class="tech-key">联网搜索</span><span class="tech-val">Bing 站点搜索（site: 指定 7 站），HTML 正则解析 → 去重取前 5 条。经由 CORS 代理转发（Express/腾讯云 SCF）</span></div>
-    <div class="tech-row"><span class="tech-key">全文抓取</span><span class="tech-val">CORS 代理抓取原文 HTML，去标签提取正文，截断 6000 字后喂给大模型</span></div>
+    <div class="tech-row"><span class="tech-key">联网搜索</span><span class="tech-val">博查 API（Bocha API）站点搜索（site: 指定 7 站），结构化 JSON 返回，免费额度 1000 次/月。v5 起已废弃自建 CORS 代理方案（SCF v1/v2/v3 均崩溃）</span></div>
+    <div class="tech-row"><span class="tech-key">全文抓取</span><span class="tech-val">直接 fetch 原文 HTML，去标签提取正文，截断 6000 字后喂给大模型。getProxy() 已废弃，不再经过 CORS 代理</span></div>
     <div class="tech-row"><span class="tech-key">AI 模型接入</span><span class="tech-val">OpenAI 兼容接口（/v1/chat/completions），支持 DeepSeek 直连 + OpenRouter 中转 + 智谱 GLM 独立端点。chatEndpoint 字段适配非标准 API 路径</span></div>
     <div class="tech-row"><span class="tech-key">素材管道</span><span class="tech-val">云端定时抓取 → GitHub Gist 存储 → 前端拉取 + localStorage 30 天缓存，兼顾实时性和离线可用</span></div>
     <div class="tech-row"><span class="tech-key">扩展系统</span><span class="tech-val">钩子系统 10 个拦截点 + 外部化配置 + 扩展模板。新增搜索源/模型/自定义逻辑无需改核心代码</span></div>
@@ -323,7 +323,7 @@
 
 <footer class="footer">
   <div class="footer-line"></div>
-  强安系列 · 2026.07.18 · 内容由 AI 生成仅供参考
+  强安系列 · 2026.07.20 · 内容由 AI 生成仅供参考
 </footer>
 </body>
 </html>

@@ -420,38 +420,6 @@ POST {model}/v1/chat/completions →
 - **修复**：在 README 和 KNOWLEDGE 中明确标注 `extensions/hooks.js` 和 `extensions/config.js` 为运行时必需文件，手机演示包中必须包含完整的 `extensions/` 目录
 - **教训**：不要被"extensions"的命名误导——里面有些文件是核心依赖，有些才是可选扩展。文档里要区分清楚"必需"和"可选"
 
-### 坑 30：fetchArticleContent 不返回 item → 直抓原文链路断裂（严重）
-
-- **现象**：安全园地生文助手选中素材后点击"直抓原文"，调用方永远拿不到 `result.content`，只能误入搜索回退，生成的文章不使用选中素材的原文
-- **根因**：`fetchArticleContent()` 函数内部对 `item.text = ...` 赋值后没有 `return item`，导致调用方 `.then(result => ...)` 中的 `result` 为 `undefined`
-- **修复**：在函数末尾补上 `return item;`，确保处理后的素材对象正确返回给调用方
-- **教训**：处理可变对象并返回给调用方时，必须在函数末尾显式 return。JavaScript 箭头函数省略 `{}` 可以隐式返回，但一旦用了 `{}` 就必须显式 `return`
-- **发现**：Codex 检修，2026-07-20
-
-### 坑 31：强安视界模型切换缺少适配层 → 非 DeepSeek 模型接口路径不匹配（严重）
-
-- **现象**：强安视界切换到 GLM / OpenRouter 等模型时，API 请求失败，接口路径不匹配
-- **根因**：`callDeepSeekDraft` 中直接拼接 `{baseUrl}/v1/chat/completions`，但 GLM 需要 `/api/paas/v4/chat/completions`，OpenRouter 有些模型需要不同的 model 参数名。代码缺少 `DS_CHAT_ENDPOINT` 和 `DS_API_MODEL` 全局变量，MODEL_MAP 中已定义的 `chatEndpoint` / `apiModel` 字段未被读取和设置
-- **修复**：在模型切换逻辑中读取 MODEL_MAP 的 `chatEndpoint` 和 `apiModel`，设置到 `window.DS_CHAT_ENDPOINT` 和 `window.DS_API_MODEL`；API 调用时优先使用 `DS_CHAT_ENDPOINT`，其次才用 `baseUrl + /v1/chat/completions`
-- **教训**：MODEL_MAP 中定义了的字段必须在运行时使用，配置和消费两边要一一对齐。新增模型品牌时必须走通完整调用链路
-- **发现**：Codex 检修，2026-07-20
-
-### 坑 32：强安视界批量写稿入口缺少 API Key 检查 → 空 Key 直接发请求（中等）
-
-- **现象**：强安视界批量写稿功能在用户未配置 API Key 的情况下也能点击发起，请求带着空 Key 发出后必然失败，但用户看到的是不明确的网络错误
-- **根因**：批量写稿入口按钮的点击事件中缺少 API Key 检查逻辑，没有在发请求前校验 `localStorage` 中 Key 是否存在且非空
-- **修复**：在批量写稿入口增加 API Key 检查：Key 为空时弹出提示引导用户先去设置面板配置，不发请求
-- **教训**：所有对外 API 调用的入口都应前置校验 Key。空 Key 请求不仅浪费网络和 API 额度（有些平台会计费失败请求），还让用户看到无意义的错误信息
-- **发现**：Codex 检修，2026-07-20
-
-### 坑 33：标题优化 JSON 数组被 response_format: json_object 约束破坏（中等）
-
-- **现象**：强安视界标题优化功能期望返回 JSON 数组 `["标题1", "标题2", ...]`，但模型返回的是被包裹或格式异常的 JSON
-- **根因**：API 调用中设置了 `response_format: { type: "json_object" }`，该约束要求模型返回一个 JSON 对象 `{...}` 而非数组 `[...]`。当提示词要求返回数组时，模型在 json_object 约束下行为不确定——有的模型会返回 `{"titles": [...]}`，有的会返回语法异常的数组
-- **修复**：标题优化函数是少数需要 JSON 数组的场景，必须在 API 调用中关闭 `response_format: json_object`，让模型自由输出数组格式。同时在 `parseJsonContent` 兼容层增加对纯数组的解析支持
-- **教训**：`response_format: json_object` 只适用于输出 JSON 对象，需要数组输出时必须关闭。不同模型对 `response_format` 的支持程度差异巨大，始终在解析前做格式兼容
-- **发现**：Codex 检修，2026-07-20
-
 ### 3.1 v4 新增：选题日历（TOPIC_CALENDAR + getCalendarKeywords）
 
 **数据结构**：
