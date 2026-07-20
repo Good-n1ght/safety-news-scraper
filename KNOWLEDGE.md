@@ -452,6 +452,24 @@ POST {model}/v1/chat/completions →
 - **教训**：`response_format: json_object` 只适用于输出 JSON 对象，需要数组输出时必须关闭。不同模型对 `response_format` 的支持程度差异巨大，始终在解析前做格式兼容
 - **发现**：Codex 检修，2026-07-20
 
+### 坑 34：callDeepSeekDraft 缺少 chatUrl 局部变量 → 运行时 crash（严重）
+
+- **现象**：强安视界点击"AI 写稿"按钮后，控制台报 `Uncaught ReferenceError: chatUrl is not defined`，写稿全链路中断
+- **根因**：`callDeepSeekDraft()` 函数内部使用了 `fetch(chatUrl, ...)`，但 `chatUrl` 未在函数作用域内定义。Codex 第一轮检修补了 `DS_CHAT_ENDPOINT` / `DS_API_MODEL` 全局变量和 `refreshModelRuntime()`，但漏了在 `callDeepSeekDraft` 内部声明 `var chatUrl = ...`。语法检查通过（全局作用域中有同名变量存在于其他脚本段），但运行时的异步事件回调中 `chatUrl` 不在当前作用域链上
+- **修复**：在 `callDeepSeekDraft` 函数内部补入 `var chatUrl = window.DS_CHAT_ENDPOINT || (baseUrl + "/v1/chat/completions");`
+- **教训**：全局变量 ≠ 函数内部可用。JavaScript 的作用域链在脚本顶层声明和函数内部声明之间，不能靠"看起来有同名变量"来推断可用性。每次在函数中使用变量前，确认它要么是函数形参、要么是函数内部声明的局部变量、要么明确引用 `window.xxx`
+- **发现**：Codex 二次修复 + Marvis 验证，2026-07-20
+
+### 坑 35：硬编码 API Key 过期 → 请求成功但认证失败，无 JS 报错（中等）
+
+- **现象**：chatUrl 修复后，fetch 请求正常发出、CORS 通过、HTTP 200 返回，但所有写稿结果都是"AI 写稿失败"。控制台无任何 JS 错误，只有 API 返回的 JSON 中包含 `authentication_error: Your api key is invalid`
+- **根因**：页面中硬编码的 `DS_API_KEY`（`sk-64c2daf09b0148878e917e80d9c861c6`）已被 DeepSeek 平台判定为无效。这种错误不是网络层或代码层的 failure，而是业务层的认证失败，`response.ok` 为 `false` 走正常 error 分支，所以 JS 不报错、错误信息正确展示。但正因为没有红色报错，很容易被误认为"功能本身有 bug"
+- **修复**：在页面设置面板中填入有效的 DeepSeek API Key。错误处理链路已验证正确：`callDeepSeekDraft` 检测 `!response.ok` → 提取 `payload.error.message` → throw → `generateArticles` 的 `.catch()` 展示失败提示并继续处理下一篇
+- **教训**：
+  - API Key 硬编码在 HTML 源码中是安全隐患：任何人打开页面 F12 就能看到 Key，且部署到 GitHub Pages 后 Key 完全公开。应改为仅通过设置面板输入、存 localStorage，源码中不包含真实 Key
+  - "功能跑通了但结果全是失败" ≠ 代码有 bug。排查时要区分：网络层（CORS/超时）、代码层（JS 报错/逻辑错误）、业务层（认证失败/额度不足/参数错误）
+- **发现**：Marvis 测试验证，2026-07-20
+
 ### 3.1 v4 新增：选题日历（TOPIC_CALENDAR + getCalendarKeywords）
 
 **数据结构**：
