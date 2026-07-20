@@ -1236,6 +1236,7 @@ function callDeepSeekDraft(params) {
   var maxTokens = params.maxTokens || gd("max_tokens", 3600);
   var temperature = (params.temperature !== undefined) ? params.temperature : gd("temperature", 0.7);
   var useJsonFormat = (params.jsonFormat !== false);
+  var timeoutMs = params.timeoutMs || 120000; // 默认 120 秒超时
 
   var body = {
     model: model,
@@ -1251,14 +1252,19 @@ function callDeepSeekDraft(params) {
     body.response_format = { type: "json_object" };
   }
 
+  var controller = new AbortController();
+  var timer = setTimeout(function() { controller.abort(); }, timeoutMs);
+
   return fetch(chatUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": "Bearer " + getApiKey()
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal: controller.signal
   }).then(function(response) {
+    clearTimeout(timer);
     return response.json().then(function(payload) {
       if (!response.ok) {
         var msg = (payload && payload.error && payload.error.message) ? payload.error.message : ("HTTP " + response.status);
@@ -1270,6 +1276,12 @@ function callDeepSeekDraft(params) {
       }
       return content.trim();
     });
+  }).catch(function(err) {
+    clearTimeout(timer);
+    if (err && err.name === "AbortError") {
+      throw new Error("DeepSeek API 请求超时（" + (timeoutMs / 1000) + "秒），请检查网络或稍后重试");
+    }
+    throw err;
   });
 }
 
