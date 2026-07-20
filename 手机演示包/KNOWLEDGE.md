@@ -470,6 +470,18 @@ POST {model}/v1/chat/completions →
   - "功能跑通了但结果全是失败" ≠ 代码有 bug。排查时要区分：网络层（CORS/超时）、代码层（JS 报错/逻辑错误）、业务层（认证失败/额度不足/参数错误）
 - **发现**：Marvis 测试验证，2026-07-20
 
+### 坑 36：fetch 无超时 → API 不响应时 UI 永久卡死（严重）
+
+- **现象**：输入正确 API Key 后点击"AI 写稿"，UI 永远显示"AI 正在写文章 (0/N)..."，5 分钟以上无任何反馈——没有结果、没有报错、没有超时提示
+- **根因**：`callDeepSeekDraft()` 中的 `fetch()` 没有设置超时。当 DeepSeek 服务端不响应（不返回成功也不返回错误）时，fetch Promise 永远处于 pending 状态，`.then()` 和 `.catch()` 都不会触发。`generateArticles` 的递归处理逻辑在 `.then()` / `.catch()` 中，所以后续文章全部阻塞
+- **对比**：安全园地生文助手的同名函数早已加了 `AbortController` 超时机制，强安视界是从旧版拷贝过来的，漏了这层防护
+- **修复**：在 `callDeepSeekDraft` 中加入 `AbortController` + 120 秒超时，超时后抛出 `"DeepSeek API 请求超时（120秒），请检查网络或稍后重试"`；同时在 `.then()` 和 `.catch()` 中都调用 `clearTimeout(timer)` 避免内存泄漏
+- **教训**：
+  - 任何对外部 API 的 `fetch()` 都必须带超时，否则一个挂起的请求会卡死整个用户界面
+  - 两个产品（安全园地/强安视界）共用同名函数时，修复一个必须同步检查另一个。本次强安视界的 `callDeepSeekDraft` 是旧版拷贝，安全园地的超时修复未同步过来
+  - "UI 卡死、没有任何报错"几乎肯定是 Promise 挂起（而非 reject），优先排查 fetch 超时 / 死锁 / 无限递归
+- **发现**：用户测试反馈 + Marvis 分析，2026-07-20
+
 ### 3.1 v4 新增：选题日历（TOPIC_CALENDAR + getCalendarKeywords）
 
 **数据结构**：

@@ -55,6 +55,13 @@
 - **影响范围**：强安视界 — 所有依赖 DeepSeek API 的功能
 - **对应坑号**：坑35
 
+### 强安视界 callDeepSeekDraft 缺少 fetch 超时 → UI 永久卡死
+- **日期**：2026-07-20
+- **操作人**：Marvis（用户测试反馈）
+- **修改内容**：`强安视界_UI改版.html` 的 `callDeepSeekDraft()` 中 `fetch()` 没有超时机制。当 DeepSeek 服务端不响应时 Promise 永久 pending，UI 永远卡在"AI 正在写文章"。安全园地生文助手早已加了 `AbortController`，强安视界是从旧版拷贝漏掉的。修复：加入 `AbortController` + 120 秒超时，超时抛明确提示；`.then()` 和 `.catch()` 均调用 `clearTimeout` 防内存泄漏
+- **影响范围**：强安视界 — AI 写稿功能
+- **对应坑号**：坑36
+
 
 ## 2026-07-20 — Marvis 检修
 

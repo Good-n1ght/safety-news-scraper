@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>强安系列智能工具产品介绍</title>
+<style>
+  :root {
+    --ink: #0c1222;
+    --navy: #1a2744;
+    --gold: #c9a84c;
+    --gold-light: #e8d398;
+    --warm-white: #faf8f4;
+    --paper: #f4f1e9;
+    --stone: #e8e4da;
+    --slate: #5b6270;
+    --slate-light: #8b919e;
+    --success: #2d8a56;
+    --text: #1e2636;
+    --text-secondary: #4a5364;
+    --radius: 6px;
+    --shadow-card: 0 1px 3px rgba(12,18,34,.06), 0 4px 16px rgba(12,18,34,.04);
+    --shadow-elevated: 0 2px 6px rgba(12,18,34,.08), 0 8px 32px rgba(12,18,34,.06);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px;scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI","Noto Sans SC",sans-serif;
+    background:var(--warm-white);
+    color:var(--text);
+    line-height:1.6;
+    overflow-x:hidden;
+  }
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+  .hero{
+    background:linear-gradient(165deg,var(--ink) 0%,var(--navy) 55%,#1e3356 100%);
+    color:var(--warm-white);
+    padding:clamp(48px,8vw,96px) clamp(20px,5vw,64px) clamp(40px,6vw,72px);
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::after{
+    content:"";position:absolute;bottom:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);
+    opacity:.4;
+  }
+  .hero::before{
+    content:"";position:absolute;top:-120px;right:-80px;width:400px;height:400px;
+    border-radius:50%;
+    background:radial-gradient(circle,var(--gold) 0%,transparent 70%);
+    opacity:.06;
+  }
+  .hero-content{max-width:860px;margin:0 auto;position:relative;z-index:1}
+  .hero-label{
+    display:inline-block;font-size:clamp(11px,1.2vw,13px);font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold-light);border:1px solid rgba(201,168,76,.3);
+    padding:6px 16px;border-radius:2px;margin-bottom:28px;
+  }
+  .hero h1{
+    font-family:Georgia,"Noto Serif SC",serif;
+    font-size:clamp(28px,5vw,48px);font-weight:400;
+    line-height:1.25;letter-spacing:-.01em;
+    margin-bottom:16px;
+  }
+  .hero h1 strong{color:var(--gold);font-weight:400}
+  .hero-sub{
+    font-size:clamp(14px,1.6vw,17px);color:rgba(255,255,255,.55);
+    max-width:560px;line-height:1.65;
+  }
+
+  .section{padding:clamp(40px,6vw,80px) clamp(20px,5vw,48px)}
+  .section--alt{background:var(--paper)}
+  .section--dark{background:var(--ink);color:var(--warm-white)}
+  .section-head{max-width:860px;margin:0 auto 40px}
+  .section-num{
+    font-size:clamp(11px,1.1vw,12px);font-weight:600;letter-spacing:.1em;
+    color:var(--gold);text-transform:uppercase;margin-bottom:8px;
+  }
+  .section-title{
+    font-family:Georgia,"Noto Serif SC",serif;
+    font-size:clamp(22px,3.2vw,32px);font-weight:400;
+    line-height:1.3;letter-spacing:-.01em;
+    margin-bottom:10px;
+  }
+  .section-title--light{color:var(--warm-white)}
+  .section-desc{color:var(--slate);font-size:clamp(14px,1.3vw,16px);line-height:1.6}
+  .section-desc--light{color:var(--slate-light)}
+
+  .grid{max-width:860px;margin:0 auto;display:grid;gap:clamp(16px,2vw,24px)}
+  .grid--2{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+  .grid--3{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+  .grid--4{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr))}
+
+  .card{
+    background:#fff;border-radius:var(--radius);
+    padding:clamp(20px,3vw,28px);
+    box-shadow:var(--shadow-card);
+    transition:box-shadow .25s ease,transform .25s ease;
+  }
+  .card:hover{box-shadow:var(--shadow-elevated);transform:translateY(-2px)}
+  .card--dark{background:rgba(255,255,255,.04);color:var(--warm-white);box-shadow:none}
+  .card--dark:hover{box-shadow:0 4px 24px rgba(0,0,0,.3);background:rgba(255,255,255,.06)}
+  .card--featured{border-left:3px solid var(--gold);padding-left:25px}
+  .card-icon{
+    width:40px;height:40px;border-radius:var(--radius);
+    background:var(--paper);display:flex;align-items:center;justify-content:center;
+    font-size:18px;margin-bottom:14px;
+  }
+  .card-icon--gold{background:rgba(201,168,76,.12);color:var(--gold)}
+  .card-icon--dark{background:rgba(255,255,255,.08)}
+  .card h3{
+    font-size:clamp(15px,1.4vw,17px);font-weight:600;
+    margin-bottom:6px;line-height:1.35;
+  }
+  .card p{color:var(--text-secondary);font-size:clamp(13px,1.1vw,14px);line-height:1.6}
+
+  .feature-list{list-style:none;max-width:860px;margin:0 auto}
+  .feature-list li{
+    display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--stone);
+    font-size:clamp(14px,1.2vw,15px);line-height:1.55;
+    align-items:flex-start;
+  }
+  .feature-list li:last-child{border-bottom:none}
+  .feature-bullet{
+    flex-shrink:0;width:8px;height:8px;border-radius:50%;
+    background:var(--gold);margin-top:8px;
+  }
+  .feature-label{font-weight:600;min-width:clamp(100px,16vw,160px);flex-shrink:0;color:var(--text)}
+  .feature-value{color:var(--text-secondary)}
+  .feature-value--light{color:var(--slate-light)}
+
+  .upgrade-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:linear-gradient(135deg,var(--gold),#b89028);
+    color:#fff;font-size:12px;font-weight:700;
+    padding:4px 12px;border-radius:3px;
+    margin-bottom:12px;
+  }
+  .upgrade-dot{
+    width:6px;height:6px;border-radius:50%;background:#fff;
+    animation:pulse 1.5s ease infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .stat-row{
+    max-width:860px;margin:0 auto;
+    display:flex;flex-wrap:wrap;gap:clamp(20px,4vw,48px);
+    padding:clamp(24px,4vw,40px) 0;
+  }
+  .stat-num{
+    font-family:Georgia,"Noto Serif SC",serif;
+    font-size:clamp(32px,5vw,48px);font-weight:400;
+    color:var(--gold);line-height:1;
+    margin-bottom:6px;
+  }
+  .stat-label{font-size:clamp(13px,1.1vw,14px);color:var(--slate-light)}
+
+  .adv-grid{max-width:860px;margin:0 auto;display:grid;gap:clamp(20px,2.5vw,32px)}
+  .adv-item{
+    display:flex;gap:16px;align-items:flex-start;
+    padding-left:clamp(0px,2vw,16px);
+  }
+  .adv-num{
+    flex-shrink:0;width:36px;height:36px;border-radius:50%;
+    background:rgba(201,168,76,.1);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:15px;
+  }
+  .adv-text h3{font-size:clamp(15px,1.3vw,16px);font-weight:600;margin-bottom:4px}
+  .adv-text p{color:var(--text-secondary);font-size:clamp(13px,1.05vw,14px);line-height:1.55}
+
+  .tech-table{max-width:700px;margin:0 auto}
+  .tech-row{display:flex;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08);gap:16px}
+  .tech-row:last-child{border-bottom:none}
+  .tech-key{flex-shrink:0;width:clamp(90px,18vw,130px);font-weight:600;font-size:14px;color:var(--gold-light)}
+  .tech-val{font-size:14px;color:var(--slate-light);line-height:1.5}
+
+  /* Limitation list */
+  .limit-list{list-style:none;max-width:860px;margin:0 auto}
+  .limit-list li{
+    display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--stone);
+    font-size:clamp(13px,1.1vw,14px);line-height:1.5;
+    align-items:flex-start;
+  }
+  .limit-list li:last-child{border-bottom:none}
+  .limit-bullet{
+    flex-shrink:0;width:6px;height:6px;border-radius:50%;
+    background:var(--slate-light);margin-top:7px;
+  }
+  .limit-val{color:var(--text-secondary)}
+
+  .footer{
+    text-align:center;padding:40px 20px;
+    background:var(--ink);color:var(--slate-light);
+    font-size:12px;
+  }
+  .footer-line{width:40px;height:1px;background:var(--gold);margin:0 auto 16px;opacity:.3}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-content">
+    <span class="hero-label">Product Introduction</span>
+    <h1>强安系列<strong>智能工具</strong></h1>
+    <p class="hero-sub">面向煤矿企业安全生产宣传场景，联网搜索 + AI 大模型实时生成安全宣教图文草稿。零构建静态页面，文件夹整体复制即可使用。</p>
+  </div>
+</header>
+
+<!-- Product 1: 生文助手 -->
+<section class="section" id="p1">
+  <div class="section-head">
+    <div class="section-num">Product 01</div>
+    <h2 class="section-title">强安兴企安全园地 AI 生文助手</h2>
+    <p class="section-desc">输入安全话题，自动联网搜索 7 个权威站点最新资料，调用大模型生成带标题、正文、配图方案和审核提醒的完整图文草稿。</p>
+  </div>
+
+  <ul class="feature-list">
+    <li><span class="feature-bullet"></span><span class="feature-label">实时联网搜索</span><span class="feature-value">不再依赖预置素材——每次按下生成按钮，实时去应急管理部、矿山安监局、煤炭报、煤矿安全网、安全文化网、煤炭资讯网、国家卫健委 7 站抓取当日最新文章。结果标注来源链接，可溯源可核实</span></li>
+    <li><span class="feature-bullet"></span><span class="feature-label">AI 自动生成完整稿件</span><span class="feature-value">基于搜索到的真实资料，生成 800-1500 字结构化正文（4-5 个小节 + 操作指引），含标题、封面描述、配图关键词、审核提醒，不是套模板，每次内容都不同</span></li>
+    <li><span class="feature-bullet"></span><span class="feature-label">每日自动抓取</span><span class="feature-value">GitHub Actions 定时管道每日自动抓取 7 大安全新闻源最新文章，去重分类后存入 GitHub Gist 云端素材库。前端拉取 + 本地 30 天缓存，离线也能浏览。管道失败自动创建 Issue 告警，不做静默失败</span></li>
+    <li><span class="feature-bullet"></span><span class="feature-label">15+ 模型品牌支持</span><span class="feature-value">内置 DeepSeek + OpenRouter + 智谱 GLM 三大通道，80+ 模型可选。API 设置面板统一管理品牌-模型-密钥，一键切换</span></li>
+    <li><span class="feature-bullet"></span><span class="feature-label">关键词全覆盖</span><span class="feature-value">搜索关键词覆盖安全事故/班组建设/现场实训/职工健康/职业病/心脑血管/高血压/急救/饮食/戒烟限酒/季节防病/节日安全</span></li>
+    <li><span class="feature-bullet"></span><span class="feature-label">扩展系统</span><span class="feature-value">内置钩子系统（10 个钩子点），覆盖搜索/抓取/生成/渲染全链路。新增搜索源或自定义逻辑无需改核心代码，复制扩展模板修改即可</span></li>
+    <li><span class="feature-bullet"></span><span class="feature-label">导出分发</span><span class="feature-value">一键复制 / 导出 PNG 卡片，微信群转发、打印张贴</span></li>
+  </ul>
+
+  <!-- 局限说明 -->
+  <div style="max-width:860px;margin:48px auto 0">
+    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--slate)">当前局限</h3>
+    <ul class="limit-list">
+      <li><span class="limit-bullet"></span><span class="limit-val">博查 API 免费额度 1000 次/月，超出需付费。当前使用量远低于限制</span></li>
+      <li><span class="limit-bullet"></span><span class="limit-val">搜索回退依赖通用搜索，自定义话题在安全站点无结果时走通用搜索兜底</span></li>
+      <li><span class="limit-bullet"></span><span class="limit-val">生成质量受搜索结果影响较大——搜不到好内容则文章质量下降</span></li>
+      <li><span class="limit-bullet"></span><span class="limit-val">API Key 存浏览器 localStorage，换设备需重新填写</span></li>
+      <li><span class="limit-bullet"></span><span class="limit-val">自建 CORS 代理路线已放弃（SCF v1/v2/v3 均以崩溃告终），搜索改用博查 API，全文直接 fetch</span></li>
+    </ul>
+  </div>
+
+  <div class="adv-grid" style="margin-top:clamp(32px,5vw,56px)">
+    <div class="adv-item">
+      <div class="adv-num">1</div>
+      <div class="adv-text"><h3>真实资料驱动</h3><p>不编造内容，每篇文章基于当日实时搜索结果撰写，标注来源链接。</p></div>
+    </div>
+    <div class="adv-item">
+      <div class="adv-num">2</div>
+      <div class="adv-text"><h3>多模型自由切换</h3><p>不绑定单一厂商，DeepSeek/GLM/OpenRouter 任意切换。</p></div>
+    </div>
+    <div class="adv-item">
+      <div class="adv-num">3</div>
+      <div class="adv-text"><h3>煤矿深度定制</h3><p>分类体系、语言风格、受众选择全链路围绕矿山安全宣传实际需求。</p></div>
+    </div>
+    <div class="adv-item">
+      <div class="adv-num">4</div>
+      <div class="adv-text"><h3>可扩展可维护</h3><p>钩子系统 + 外部化配置 + 踩坑文档，新模型/新搜索源/新功能即插即用。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Product 2 -->
+<section class="section section--alt" id="p2">
+  <div class="section-head">
+    <div class="section-num">Product 02</div>
+    <h2 class="section-title">强安视界</h2>
+    <p class="section-desc">新闻聚合 + AI 批量写稿 + 百度热搜多分类智能抓取。从热点到稿件，一键闭环。</p>
+  </div>
+
+  <div style="max-width:860px;margin:0 auto 28px">
+    <span class="upgrade-badge"><span class="upgrade-dot"></span>2026.07.14 全新升级</span>
+  </div>
+
+  <div class="grid grid--2" style="max-width:860px;margin:0 auto">
+    <div class="card card--featured">
+      <div class="card-icon card-icon--gold">&#9830;</div>
+      <h3>百度热搜多分类抓取</h3>
+      <p>实时抓取综合榜、财经榜、民生榜、国际榜，每条自带热搜排名和热度指数，分类准确率大幅提升。</p>
+    </div>
+    <div class="card card--featured">
+      <div class="card-icon card-icon--gold">&#9830;</div>
+      <h3>四榜并发 + 容错</h3>
+      <p>4 个榜单同时抓取，去重合并，单榜失败不影响其他。一次点击拉回 30 条高热度新闻。</p>
+    </div>
+  </div>
+
+  <div style="max-width:860px;margin:40px auto 0">
+    <ul class="feature-list">
+      <li><span class="feature-bullet"></span><span class="feature-label">头条热搜 + RSS</span><span class="feature-value">今日头条多分类 feed + 人民网/中新网 RSS，新闻来源不依赖单一渠道</span></li>
+      <li><span class="feature-bullet"></span><span class="feature-label">AI 批量标题优化</span><span class="feature-value">专属"通俗化表达"模式，把政策术语转成职工听得懂的大白话</span></li>
+      <li><span class="feature-bullet"></span><span class="feature-label">一键批量写稿</span><span class="feature-value">勾选新闻，AI 逐条生成 500-800 字标准化解读稿，含标题/导语/正文/来源</span></li>
+      <li><span class="feature-bullet"></span><span class="feature-label">全部稿件一键复制</span><span class="feature-value">生成的所有文章一键复制到剪贴板，直接粘贴到公众号/简报/微信</span></li>
+      <li><span class="feature-bullet"></span><span class="feature-label">五大分类筛选</span><span class="feature-value">国情/军事/科技/民生/财经生活，百度热搜 + AI 自动归类双重保障</span></li>
+      <li><span class="feature-bullet"></span><span class="feature-label">80+ 模型支持</span><span class="feature-value">与生文助手共享完整模型矩阵（含 GLM-4.7-Flash 国产免费模型），不绑死一家厂商</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- Tech -->
+<section class="section section--dark" id="tech">
+  <div class="section-head">
+    <div class="section-num">Technology</div>
+    <h2 class="section-title section-title--light">技术架构</h2>
+    <p class="section-desc section-desc--light">单文件前端 + 轻量代理 + 云端数据管道。</p>
+  </div>
+
+  <div class="stat-row">
+    <div><div class="stat-num">1</div><div class="stat-label">零构建静态页面</div></div>
+    <div><div class="stat-num">7</div><div class="stat-label">实时搜索源</div></div>
+    <div><div class="stat-num">80+</div><div class="stat-label">模型可选</div></div>
+    <div><div class="stat-num">10</div><div class="stat-label">扩展钩子点</div></div>
+  </div>
+
+  <div class="tech-table">
+    <div class="tech-row"><span class="tech-key">前端架构</span><span class="tech-val">纯 HTML/CSS/JS，无框架，无构建，浏览器直接打开即可使用</span></div>
+    <div class="tech-row"><span class="tech-key">联网搜索</span><span class="tech-val">博查 API（Bocha API）站点搜索（site: 指定 7 站），结构化 JSON 返回，免费额度 1000 次/月。v5 起已废弃自建 CORS 代理方案（SCF v1/v2/v3 均崩溃）</span></div>
+    <div class="tech-row"><span class="tech-key">全文抓取</span><span class="tech-val">直接 fetch 原文 HTML，去标签提取正文，截断 6000 字后喂给大模型。getProxy() 已废弃，不再经过 CORS 代理</span></div>
+    <div class="tech-row"><span class="tech-key">AI 模型接入</span><span class="tech-val">OpenAI 兼容接口（/v1/chat/completions），支持 DeepSeek 直连 + OpenRouter 中转 + 智谱 GLM 独立端点。chatEndpoint 字段适配非标准 API 路径</span></div>
+    <div class="tech-row"><span class="tech-key">素材管道</span><span class="tech-val">云端定时抓取 → GitHub Gist 存储 → 前端拉取 + localStorage 30 天缓存，兼顾实时性和离线可用</span></div>
+    <div class="tech-row"><span class="tech-key">扩展系统</span><span class="tech-val">钩子系统 10 个拦截点 + 外部化配置 + 扩展模板。新增搜索源/模型/自定义逻辑无需改核心代码</span></div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-line"></div>
+  强安系列 · 2026.07.20 · 内容由 AI 生成仅供参考
+</footer>
+</body>
+</html>
