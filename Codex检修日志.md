@@ -33,3 +33,31 @@
 ### 说明
 
 本次专门修复强安视界中 `fetch(chatUrl)` 但 `chatUrl` 未定义的问题。该问题不会被普通语法检查发现，但点击 AI 写稿时会触发运行时报错。
+
+
+## 2026/7/21 18:15 Codex + Marvis 联合改造记录
+
+### 安全园地采集管道 v2 升级
+
+Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`，Marvis 落地实施。
+
+**改造文件**：
+- `scripts/scrape-safety-news.js`：重写采集脚本，从 Bing site: 搜索 7 站 → Google News RSS（10 关键词）+ 官方源（4 站）+ fallback 精选库三层架构
+- `scripts/package.json`：v1.0 → v2.0，新增 fast-xml-parser 依赖（解析 Google News RSS XML）
+- `.github/workflows/update-safety-news.yml`：调度从每天 1 次（08:00）→ 每天 2 次（07:30 + 15:30）
+- `data/fallback_materials.json`：新增 10 条精选兜底素材
+
+**核心变更**：
+- 数据源：Google News RSS 为主力发现层（GitHub Actions 海外环境可直连），官方站 Bing site: 搜索为权威兜底层，fallback 为人补位层
+- 质量判断：从简单 classifyText 正则 → 五因子打分制（来源 +30 / 标题关键词 +25 / 摘要内容 +20 / 地域匹配 +20 / 7 天内时效 +10），惩罚词剔除（国际安全/网络安全/金融安全/铁路投资/军事冲突 等）
+- 分数阈值：80+ 优先展示 / 60-79 正常 / 40-59 备用 / <40 剔除
+- 兜底机制：当日新增不足 10 条时自动从 fallback 补充
+- Gist 输出格式兼容，新增 score / origin 字段
+
+**Commit**: `b9f1fa6` feat(采集): 升级为Google News RSS+打分制+fallback三层采集v2
+**语法检查**: 通过（node --check）
+**对应坑号**: 坑37（Bing site: 搜索误报率高，RSS 源不匹配安全行业需求）
+
+### 说明
+
+本次改造直接解决用户之前反复指出的"素材不相关"问题——通用 RSS + classifyText 会把"伊朗打美军""铁路投资"等归为"综合安全"混入素材库。新方案从源头（Google News RSS 关键词精准匹配）+ 打分过滤（惩罚词剔除）+ fallback 精选三管齐下，从根本上提升素材质量。

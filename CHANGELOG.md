@@ -4,6 +4,27 @@
 
 ---
 
+## 2026-07-21 — Marvis 检修（Codex 方案落地）
+
+### 安全园地采集管道 v2：Google News RSS + 打分制 + fallback 三层架构
+- **日期**：2026-07-21
+- **操作人**：Marvis（方案：Codex，落地：Marvis）
+- **修改内容**：
+  - `scripts/scrape-safety-news.js` 完全重写（141→461行）：Bing site: 搜索7站 → Google News RSS（10关键词）+ 官方源 Bing 搜索（4站）+ fallback 精选库三层
+  - `scripts/package.json` v1.0→v2.0，新增 fast-xml-parser 依赖
+  - `.github/workflows/update-safety-news.yml` 调度从每天1次→每天2次（07:30+15:30）
+  - `data/fallback_materials.json` 新增10条精选兜底素材
+- **核心改进**：
+  - 五因子打分制替代简单 classifyText（来源/标题/摘要/地域/时效）
+  - 惩罚词剔除（国际安全/网络安全/金融安全/铁路投资/军事冲突等）
+  - 分数阈值：80+优先 / 60-79正常 / 40-59备用 / <40剔除
+  - 当日新增不足10条自动从 fallback 补位
+- **影响范围**：安全园地生文助手 — 素材库全链路
+- **对应坑号**：坑37（Bing site: 搜索误报率高，RSS源不匹配安全行业需求）
+- **Commit**: `b9f1fa6`
+
+---
+
 ## 2026-07-20 — Codex 检修
 
 ### fetchArticleContent 补 return item
