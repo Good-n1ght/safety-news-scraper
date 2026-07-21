@@ -25,6 +25,26 @@
 
 ---
 
+## 2026-07-21 — Marvis 检修（素材源切换 & 缓存修复）
+
+### 生文助手素材源从 RSS 切换到 Gist 管线
+- **日期**：2026-07-21
+- **操作人**：Marvis
+- **修改内容**：`强安兴企安全园地生文助手.html` 中 `fetchTodayMaterials()` 从 7 个通用 RSS 源（rss2json.com 代理人民日报/人民网/中新网/少数派）切换为直接 fetch Gist 管线 JSON（safety_news.json）。删除约 115 行 RSS 抓取代码，复用累积合并、分类、排序逻辑，新增 score 字段排序
+- **核心改进**：从 "通用源 + 关键词后过滤"（垃圾率 91.8%）切换为 "Gist 管线专业采集"（垃圾率 0%），素材质量从 7/85 条可用提升到 100 条全部对口
+- **影响范围**：安全园地生文助手 — 素材库数据源全链路
+- **Commit**: `153bbe0`
+
+### localStorage 缓存清空 bug 修复
+- **日期**：2026-07-21
+- **操作人**：Marvis
+- **修改内容**：数据源版本检测块中 `localStorage.removeItem("materials_cache")` 改为 `localStorage.removeItem(MATERIALS_LS_KEY)`，DS_VERSION 从 "gist-v1" 升级到 "gist-v2"
+- **根因**：实际的缓存 key 是 `huanxing_materials_cache_v1`，删错 key 导致旧 RSS 数据永远清不掉
+- **影响范围**：安全园地生文助手 — 素材缓存清理逻辑
+- **Commit**: `989ad9a`
+
+---
+
 ## 2026-07-20 — Codex 检修
 
 ### fetchArticleContent 补 return item
@@ -333,4 +353,4 @@
 
 ---
 
-> 最后更新：2026-07-20
+> 最后更新：2026-07-21

@@ -61,3 +61,21 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 ### 说明
 
 本次改造直接解决用户之前反复指出的"素材不相关"问题——通用 RSS + classifyText 会把"伊朗打美军""铁路投资"等归为"综合安全"混入素材库。新方案从源头（Google News RSS 关键词精准匹配）+ 打分过滤（惩罚词剔除）+ fallback 精选三管齐下，从根本上提升素材质量。
+
+
+## 2026/7/21 20:29 Marvis 检修记录
+
+### 素材源从 RSS 切换到 Gist 管线（解决 91.8% 垃圾率）
+
+- **根因**：生文助手 `fetchTodayMaterials()` 通过 rss2json.com 从 7 个通用 RSS 源抓取（人民日报、人民网、中新网、少数派），然后用安全关键词做后过滤。源不对口 → 垃圾率 91.8%
+- **修复**：删除 RSS 抓取逻辑，改为直接 fetch Gist 管线 JSON（safety_news.json），复用原有累积合并、分类、排序逻辑，新增 score 字段排序
+- **影响范围**：强安兴企安全园地生文助手.html — fetchTodayMaterials() 函数，约 115 行替换
+- **Commit**: `153bbe0`
+
+### 缓存清空逻辑 bug 修复（旧 RSS 垃圾无法清除）
+
+- **根因**：数据源版本检测（DS_VERSION = "gist-v1"）中清除缓存写的 `localStorage.removeItem("materials_cache")`，但实际缓存 key 是 `MATERIALS_LS_KEY = "huanxing_materials_cache_v1"`
+- **现象**：页面刷新后点「获取安全素材」，旧 RSS 的 112 条垃圾 + 新 Gist 的 100 条 = 212 条，垃圾数据阴魂不散
+- **修复**：`localStorage.removeItem("materials_cache")` → `localStorage.removeItem(MATERIALS_LS_KEY)`；DS_VERSION 从 `"gist-v1"` 升级到 `"gist-v2"` 强制重新触发清空
+- **影响范围**：强安兴企安全园地生文助手.html — fetchTodayMaterials() 数据源版本检测块
+- **Commit**: `989ad9a`
