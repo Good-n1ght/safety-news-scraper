@@ -1766,25 +1766,55 @@ function fetchArticleContent(item) {
         return tags.slice(0, 3);
       }
 
+/* ===== RSS 实时抓取配置（与强安视界同源） ===== */
+var RSS2JSON_API = "https://api.rss2json.com/v1/api.json?rss_url=";
+var RSS_SOURCES = [
+  { name: "人民日报-政治", url: "http://www.people.com.cn/rss/politics.xml" },
+  { name: "人民网-全部",   url: "http://www.people.com.cn/rss/ywkx.xml" },
+  { name: "中新网-国际",   url: "https://www.chinanews.com.cn/rss/world.xml" },
+  { name: "中新网-社会",   url: "https://www.chinanews.com.cn/rss/society.xml" },
+  { name: "中新网-财经",   url: "https://www.chinanews.com.cn/rss/finance.xml" },
+  { name: "中新网-生活",   url: "https://www.chinanews.com.cn/rss/life.xml" },
+  { name: "少数派-科技",   url: "https://sspai.com/feed" }
+];
+
       function fetchTodayMaterials() {
         var btn = document.getElementById("fetchMaterialsBtn");
         btn.disabled = true;
         btn.textContent = "加载中...";
         var todayISO = new Date().toISOString().slice(0, 10);
 
-        /* ===== 从 GitHub Gist raw URL 拉取云端抓取的 JSON 数据 ===== */
-        var rawUrl = (typeof GIST_RAW_URL !== "undefined" && GIST_RAW_URL)
-          ? GIST_RAW_URL
-          : "https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json";
-        var url = rawUrl + "?_t=" + Date.now();
+        /* ===== 多源 RSS 实时抓取（与强安视界同源，经安全关键词过滤） ===== */
+        var promises = RSS_SOURCES.map(function(src) {
+          var fetchUrl = RSS2JSON_API + encodeURIComponent(src.url) + "&_t=" + Date.now();
+          return fetch(fetchUrl)
+            .then(function(resp) {
+              if (!resp.ok) throw new Error("HTTP " + resp.status);
+              return resp.json();
+            })
+            .then(function(data) {
+              if (data.status !== "ok") throw new Error("rss2json API error");
+              return (data.items || []).map(function(item) {
+                return {
+                  title: (item.title || "").replace(/<[^>]+>/g, "").trim(),
+                  source: src.name,
+                  link: item.link || "",
+                  summary: (item.description || "").replace(/<\/p>\s*<p>/gi, "\n\n").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim(),
+                  publishedAt: item.pubDate || todayISO
+                };
+              });
+            })
+            .catch(function(err) {
+              console.warn("RSS 获取失败: " + src.name, err.message);
+              return [];
+            });
+        });
 
-        fetch(url).then(function(r) {
-          if (!r.ok) throw new Error("HTTP " + r.status);
-          return r.json();
-        }).then(function(data) {
-          var rawItems = data.items || [];
+        Promise.all(promises).then(function(results) {
+          var rawItems = [];
+          results.forEach(function(arr) { rawItems = rawItems.concat(arr); });
           if (rawItems.length === 0) {
-            throw new Error("云端暂无安全新闻数据");
+            throw new Error("所有新闻源暂时无数据，请稍后重试");
           }
 
           /* 去重：按标准化标题 */
@@ -1802,7 +1832,6 @@ function fetchArticleContent(item) {
           for (var s = 0; s < deduped.length; s++) {
             var d = deduped[s];
             var catText = d.title + " " + (d.summary || "");
-            /* 优先使用 JSON 中的 category/tags，缺失时用本地 classifyText/extractTags 生成 */
             items.push({
               id: "dy" + (s + 1),
               title: d.title || "",
@@ -1810,9 +1839,9 @@ function fetchArticleContent(item) {
               sourceUrl: d.link || d.sourceUrl || "",
               publishedAt: d.publishedAt || todayISO,
               summary: d.summary || "",
-              category: d.category || classifyText(catText, d.source || ""),
-              tags: (d.tags && d.tags.length) ? d.tags : extractTags(d.title, d.summary || ""),
-              review: (d.review === true)
+              category: classifyText(catText, d.source || ""),
+              tags: extractTags(d.title, d.summary || ""),
+              review: false
             });
           }
 
@@ -1854,7 +1883,7 @@ function fetchArticleContent(item) {
           renderMaterials();
           saveMaterialsToCache(materials);
 
-          showToast("已从云端抓取 " + items.length + " 条，新增 " + freshItems.length + " 条，累积 " + materials.length + " 条");
+          showToast("已从 " + RSS_SOURCES.length + " 个新闻源抓取 " + items.length + " 条，新增 " + freshItems.length + " 条，累积 " + materials.length + " 条");
           btn.disabled = false;
           btn.textContent = "获取安全素材";
         }).catch(function(err) {
