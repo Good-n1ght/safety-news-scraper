@@ -1,10 +1,11 @@
-name: 更新安全新闻素材
+name: 更新安全新闻素材 v2
 
-# 每天北京时间 8:00 (UTC 00:00) 自动执行
+# 每天北京时间 07:30 / 15:30 自动执行
 on:
   schedule:
-    - cron: "0 0 * * *"
-  workflow_dispatch:  # 允许手动触发
+    - cron: "30 23 * * *"   # UTC 23:30 = 北京时间 07:30
+    - cron: "30 7 * * *"    # UTC 07:30 = 北京时间 15:30
+  workflow_dispatch:
 
 jobs:
   scrape:
@@ -26,7 +27,7 @@ jobs:
         working-directory: scripts
         run: npm install
 
-      - name: 执行抓取
+      - name: 执行采集
         working-directory: scripts
         run: node scrape-safety-news.js
         env:
@@ -41,7 +42,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `⚠️ 安全新闻抓取管道失败 (${new Date().toISOString().slice(0, 10)})`,
-              body: `今日自动抓取任务执行失败。\n\n[查看日志](${runUrl})\n\n请检查 Actions 详情确认原因：代理/网络/Bing 限流等。`,
+              title: `⚠️ 安全新闻采集管道 v2 失败 (${new Date().toISOString().slice(0, 10)})`,
+              body: `今日采集任务执行失败。\n\n[查看日志](${runUrl})\n\n可能原因：Google News RSS 不可达 / Gist Token 过期 / 依赖安装失败。`,
               labels: ["bug"],
             });
