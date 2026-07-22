@@ -1,5 +1,18 @@
 
 
+## 2026/7/22 Marvis 检修记录
+
+### 采集脚本 v2.3：白名单过滤 + 双阈值 + 总量控制
+
+- **问题**：Bing 官方源抓回大量非安全领域噪音（百度百科词条、安全管理网导航页等），前端缓存堆积旧 RSS 垃圾数据，生文正文含"来源一""来源二"标注
+- **处理**：
+  - `scrape-safety-news.js`：新增 `SAFETY_WHITELIST` 64 词安全白名单，标题+摘要须命中 ≥2 个安全关键词才进入评分；`MAX_TOTAL_STORED` 100→30；评分阈值 40→65；惩罚词 17→31 个；`MIN_DAILY_TARGET` 10→5
+  - `强安兴企安全园地生文助手.html`：`DS_VERSION` gist-v2→gist-v3 强制清空缓存；`buildAISystemPrompt()` 去掉"标注来源"指令，references 仅用于侧栏展示；修复中文引号语法错误
+  - `scrape-safety-news.js`：截断逻辑改为显式调用 `truncateToMax()`；修复 Gist 请求超时后 loading spinner 永久旋转
+- **遗留**：本地网络不通 Google News（GitHub Actions 不受影响），fallback 仍为主要数据补充通道
+
+---
+
 ## 2026/7/20 19:45:32 Codex 检修记录
 
 ### 本次修复范围
