@@ -11,8 +11,8 @@
  *  2. Google News RSS 抓取（GitHub Actions 海外环境可直连）
  *  3. Bing site: 搜索官方源
  *  4. 正文抓取 + 打分 + 分类 + 过滤
- *  5. 合并去重 → 截断至 100 条 → 推回 Gist
- *  6. 若当日新增不足 10 条，从 fallback 补充
+ *  5. 合并去重 → 截断至 30 条 → 推回 Gist
+ *  6. 若当日新增不足 5 条，从 fallback 补充
  * 
  * GitHub Actions 每天 07:30 / 15:30（北京时间）触发。
  * 需要仓库 Secrets: GIST_TOKEN
@@ -32,11 +32,11 @@ const GIST_FILENAME = "safety_news.json";
 const GIST_RAW_URL = `https://gist.githubusercontent.com/Good-n1ght/${GIST_ID}/raw/${GIST_FILENAME}`;
 const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
 
-const MAX_TOTAL_STORED = 100;
+const MAX_TOTAL_STORED = 30;
 const FETCH_TIMEOUT_MS = 12000;
 const MAX_CONTENT_CHARS = 6000;
 const MAX_STORED_CHARS = 500;
-const MIN_DAILY_TARGET = 10; // 每日最少素材数，不足时从 fallback 补充
+const MIN_DAILY_TARGET = 5; // 每日最少素材数，不足时从 fallback 补充
 
 // ========== 第一层：Google News RSS 关键词 ==========
 const GOOGLE_NEWS_KEYWORDS = [
@@ -66,10 +66,7 @@ const SCORE_RULES = {
   sourceBonus: (source) => {
     const s = source || "";
     if (/矿山安监局|应急管理部|中国安全生产网/.test(s)) return 30;
-    if (/煤炭报|煤矿安全网|安全文化网|煤炭工业网/.test(s)) return 20;
-    // 主流新闻源（Google News 聚合常出现），给基础分鼓励
-    if (/新华|人民网|央视|中新网|中国日报|光明/.test(s)) return 15;
-    if (/新浪|搜狐|网易|腾讯|澎湃|界面|新京报|环球/.test(s)) return 10;
+    if (/煤炭报|煤矿安全网|安全文化网/.test(s)) return 15;
     return 0;
   },
 
@@ -98,31 +95,55 @@ const SCORE_RULES = {
     return days <= 7 ? 10 : 0;
   },
 
-  // 降权/剔除关键词（硬过滤）
+  // 降权/剔除关键词
   penaltyKeywords: [
-    // 时事/政治/纪念类——不是安全实战素材
-    "大地震", "遇难", "公祭", "纪念馆", "旧照", "老照片", "回顾展",
-    "两会", "党代会", "全会精神", "政协", "人大",
-    // 财经/股市类——煤矿安全板块跌1.7%这种无用
-    "板块跌", "板块涨", "主力资金", "净流出", "净流入", "A股", "基金",
-    // 明显无关领域
     "国际安全", "网络安全", "金融安全", "粮食安全", "铁路投资",
-    "军事冲突", "社会治安", "普通交通事故", "娱乐新闻", "财经",
-    // 生活消费类
+    "军事冲突", "社会治安", "普通交通事故", "娱乐新闻", "财经股票",
     "外卖", "快递", "宠物", "旅游", "明星", "综艺", "游戏",
-    // 纯粹的政治宣传稿，不涉及具体安全措施
-    "采风活动", "采风调研", "文艺汇演", "书画展", "摄影展",
-    // 其他无关领域（市容/志愿/会议/展会/农业）
-    "城管", "义警", "授旗", "矿博会", "农业领域",
-    "垃圾分类", "景观", "市委常委会",
+    "股市", "A股", "GDP", "钢琴", "楼市", "楼市调控", "相亲", "恋爱",
+    "夏令营", "养老", "医保", "社保", "个税", "教育培训",
   ],
 };
+
+// ========== 安全白名单（标题+摘要须命中至少2个关键词） ==========
+const SAFETY_WHITELIST = [
+  // 事故类（16个）
+  "爆炸", "火灾", "坍塌", "透水", "瓦斯爆炸", "瓦斯突出", "冒顶", "滑坡", "塌方",
+  "中毒", "窒息", "坠落", "触电", "起火", "燃爆",
+  // 管理类（15个）
+  "安全生产", "隐患排查", "隐患治理", "专项整治", "标准化建设", "应急管理", "安全监管",
+  "督查检查", "明查暗访", "警示教育", "培训演练", "约谈", "问责", "整改", "闭环",
+  // 行业类（16个）
+  "矿山", "煤矿", "非煤矿山", "尾矿库", "井下", "采空区", "瓦斯抽采", "瓦斯治理",
+  "化工", "危化品", "储罐", "加油站", "烟花爆竹", "建筑施工", "工地", "深基坑",
+  // 消防/救援/政策类（17个）
+  "消防", "火灾救援", "防汛", "抗洪", "抢险", "搜救", "地震", "地质灾害",
+  "气象灾害", "台风", "暴雨", "雷电", "应急救援", "应急预案", "应急演练",
+  "安全生产法", "安全生产月",
+];
+
+function isSafetyRelated(title, summary) {
+  const text = title + " " + summary;
+  // 按关键词长度降序，避免短词吃掉长词子串
+  const sorted = [...SAFETY_WHITELIST].sort((a, b) => b.length - a.length);
+  let remaining = text;
+  let count = 0;
+  for (const kw of sorted) {
+    const idx = remaining.indexOf(kw);
+    if (idx !== -1) {
+      count++;
+      remaining = remaining.substring(0, idx) + " ".repeat(kw.length) + remaining.substring(idx + kw.length);
+    }
+  }
+  return count >= 2;
+}
 
 function hasPenaltyKeywords(text) {
   return SCORE_RULES.penaltyKeywords.some((kw) => text.includes(kw));
 }
 
 function calculateScore(item) {
+  if (!isSafetyRelated(item.title, item.summary)) return -1;
   if (hasPenaltyKeywords(item.title + " " + item.summary)) return -1;
   let score = 35; // 基础分
   score += SCORE_RULES.sourceBonus(item.source);
@@ -450,14 +471,14 @@ async function main() {
   }
 
   // 6. 打分 + 分类 + 过滤
-  const enriched = uniqueResults.map(enrichItem).filter((item) => item.score >= 40);
+  const enriched = uniqueResults.map(enrichItem).filter((item) => item.score >= 65);
   enriched.sort((a, b) => (b.score || 0) - (a.score || 0));
-  console.log(`[打分过滤后] ${enriched.length} 条 (≥40分)`);
+  console.log(`[打分过滤后] ${enriched.length} 条 (≥65分)`);
 
   // 分数分布
   const dist = {};
   enriched.forEach((i) => {
-    const band = i.score >= 80 ? "80+优先" : i.score >= 60 ? "60-79正常" : "40-59备用";
+    const band = i.score >= 80 ? "80+优先" : "65-79正常";
     dist[band] = (dist[band] || 0) + 1;
   });
   console.log(`分数分布: ${JSON.stringify(dist)}`);
@@ -497,9 +518,13 @@ async function main() {
 
   console.log(`\n[合并] 新增 ${freshItems.length} 条，已有 ${existing.length} 条`);
 
-  // 9. 合并 + 按发布时间降序
+  // 9. 合并 + 按质量分降序（同分按日期降序）
   const merged = [...freshItems, ...existing];
-  merged.sort((a, b) => (b.publishedAt || "").localeCompare(a.publishedAt || ""));
+  merged.sort((a, b) => {
+    const scoreDiff = (b.score || 0) - (a.score || 0);
+    if (scoreDiff !== 0) return scoreDiff;
+    return (b.publishedAt || "").localeCompare(a.publishedAt || "");
+  });
   const final = merged.slice(0, MAX_TOTAL_STORED);
 
   // 10. 推送 Gist
