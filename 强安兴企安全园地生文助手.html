@@ -1498,7 +1498,7 @@ function initSettings() {
       };
 
       /* ========== 素材数据（localStorage缓存优先，有效期15天） ========== */
-      var MATERIALS_CACHE_VERSION = 2;
+      var MATERIALS_CACHE_VERSION = 3;
       var MATERIALS_LS_KEY = "huanxing_materials_cache_v" + MATERIALS_CACHE_VERSION;
       var MATERIALS_CACHE_DAYS = 30;
 /* 安全读取 GENERATION_DEFAULTS，未加载 config.js 时回退硬编码值 */
@@ -1529,6 +1529,7 @@ function gd(key, fallback) {
         } catch(e) { console.warn("localStorage写入失败:", e); }
       }
 
+      /* 从 localStorage 缓存恢复素材（v2 key），首次打开或缓存过期时为空 */
       var cachedMats = loadMaterialsFromCache();
       var materials = cachedMats || [];
 
@@ -1628,14 +1629,15 @@ var SEARCH_SOURCES = [
 };
 
 /* ========== 博查 Web Search API ========== */
-function searchBocha(topic) {
+function searchBocha(topic, injectCalendar) {
   /* === Hook: beforeSearch === */
   var searchCtx = Hooks.trigger(Hooks.BEFORE_SEARCH, { query: topic, sources: SEARCH_SOURCES });
   topic = searchCtx.query;
   var sources = searchCtx.sources;
   /* ======================== */
 
-  var calendarKW = getCalendarKeywords();
+  injectCalendar = (injectCalendar === undefined ? true : injectCalendar);
+  var calendarKW = injectCalendar ? getCalendarKeywords() : "";
   var siteFilters = sources.map(function(s) { return s.site; }).join("|");
   var query = topic + (calendarKW ? " " + calendarKW : "");
 
@@ -1766,132 +1768,102 @@ function fetchArticleContent(item) {
         return tags.slice(0, 3);
       }
 
-/* ===== RSS 实时抓取配置（与强安视界同源） ===== */
-var RSS2JSON_API = "https://api.rss2json.com/v1/api.json?rss_url=";
-var RSS_SOURCES = [
-  { name: "人民日报-政治", url: "http://www.people.com.cn/rss/politics.xml" },
-  { name: "人民网-全部",   url: "http://www.people.com.cn/rss/ywkx.xml" },
-  { name: "中新网-国际",   url: "https://www.chinanews.com.cn/rss/world.xml" },
-  { name: "中新网-社会",   url: "https://www.chinanews.com.cn/rss/society.xml" },
-  { name: "中新网-财经",   url: "https://www.chinanews.com.cn/rss/finance.xml" },
-  { name: "中新网-生活",   url: "https://www.chinanews.com.cn/rss/life.xml" },
-  { name: "少数派-科技",   url: "https://sspai.com/feed" }
-];
-
       function fetchTodayMaterials() {
         var btn = document.getElementById("fetchMaterialsBtn");
         btn.disabled = true;
         btn.textContent = "加载中...";
         var todayISO = new Date().toISOString().slice(0, 10);
+        var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json";
 
-        /* ===== 多源 RSS 实时抓取（与强安视界同源，经安全关键词过滤） ===== */
-        var promises = RSS_SOURCES.map(function(src) {
-          var fetchUrl = RSS2JSON_API + encodeURIComponent(src.url) + "&_t=" + Date.now();
-          return fetch(fetchUrl)
-            .then(function(resp) {
-              if (!resp.ok) throw new Error("HTTP " + resp.status);
-              return resp.json();
-            })
-            .then(function(data) {
-              if (data.status !== "ok") throw new Error("rss2json API error");
-              return (data.items || []).map(function(item) {
-                return {
-                  title: (item.title || "").replace(/<[^>]+>/g, "").trim(),
-                  source: src.name,
-                  link: item.link || "",
-                  summary: (item.description || "").replace(/<\/p>\s*<p>/gi, "\n\n").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim(),
-                  publishedAt: item.pubDate || todayISO
-                };
+        /* 数据源版本标记：源切换后自动清旧缓存 */
+        var DS_VERSION = "gist-v4";
+        var oldVer = localStorage.getItem("mat_datasource_version");
+        if (oldVer !== DS_VERSION) {
+          localStorage.removeItem(MATERIALS_LS_KEY);
+          localStorage.setItem("mat_datasource_version", DS_VERSION);
+          console.log("数据源已切换，旧缓存已清理(" + MATERIALS_LS_KEY + ")");
+        }
+
+        fetch(GIST_URL + "?_t=" + Date.now())
+          .then(function(resp) {
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            return resp.json();
+          })
+          .then(function(data) {
+            var rawItems = data.items || [];
+            if (rawItems.length === 0) {
+              throw new Error("安全素材管线暂无数据，请稍后重试");
+            }
+
+            /* 去重 + 格式化 */
+            var items = [];
+            var seenIds = {};
+            for (var i = 0; i < rawItems.length; i++) {
+              var g = rawItems[i];
+              var gid = g.id || (g.title + g.source);
+              if (seenIds[gid]) continue;
+              seenIds[gid] = true;
+              items.push({
+                id: g.id || ("sg" + (i + 1)),
+                title: g.title || "",
+                source: g.source || "",
+                sourceUrl: g.link || "",
+                publishedAt: g.publishedAt || todayISO,
+                summary: g.summary || "",
+                category: g.category || classifyText(g.title + " " + (g.summary || ""), g.source || ""),
+                tags: g.tags || extractTags(g.title, g.summary || ""),
+                review: g.review || false,
+                score: g.score || 0
               });
-            })
-            .catch(function(err) {
-              console.warn("RSS 获取失败: " + src.name, err.message);
-              return [];
-            });
-        });
-
-        Promise.all(promises).then(function(results) {
-          var rawItems = [];
-          results.forEach(function(arr) { rawItems = rawItems.concat(arr); });
-          if (rawItems.length === 0) {
-            throw new Error("所有新闻源暂时无数据，请稍后重试");
-          }
-
-          /* 去重：按标准化标题 */
-          var deduped = [];
-          var seenTitles = {};
-          for (var q = 0; q < rawItems.length; q++) {
-            var norm = (rawItems[q].title || "").replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, "").toLowerCase().substring(0, 20);
-            if (!seenTitles[norm]) {
-              seenTitles[norm] = true;
-              deduped.push(rawItems[q]);
             }
-          }
 
-          var items = [];
-          for (var s = 0; s < deduped.length; s++) {
-            var d = deduped[s];
-            var catText = d.title + " " + (d.summary || "");
-            items.push({
-              id: "dy" + (s + 1),
-              title: d.title || "",
-              source: d.source || "",
-              sourceUrl: d.link || d.sourceUrl || "",
-              publishedAt: d.publishedAt || todayISO,
-              summary: d.summary || "",
-              category: classifyText(catText, d.source || ""),
-              tags: extractTags(d.title, d.summary || ""),
-              review: false
+            /* 累积合并：旧库 + 新抓取，标题去重 */
+            var oldMats = loadMaterialsFromCache() || [];
+            var existingTitles = {};
+            oldMats.forEach(function(om) { existingTitles[om.title] = true; });
+            var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
+            var MAX_LOCAL_STORED = 30;
+            materials = oldMats.concat(freshItems);
+            /* 按质量分降序（同分按日期降序），截断至30条 */
+            materials.sort(function(a, b) {
+              var sd = (b.score || 0) - (a.score || 0);
+              if (sd !== 0) return sd;
+              return (b.publishedAt || "").localeCompare(a.publishedAt || "");
             });
-          }
+            materials = materials.slice(0, MAX_LOCAL_STORED);
+            categories = ["全部"];
+            var seenCat = {};
+            materials.forEach(function(m2) {
+              if (!seenCat[m2.category]) {
+                seenCat[m2.category] = true;
+                categories.push(m2.category);
+              }
+            });
+            quickTags = materials.slice(0, 6).map(function(m3) {
+              return "我要做一篇" + m3.title.substring(0, 30) + "相关的安全园地图文";
+            });
 
-          /* 累积合并：旧库 + 新抓取，标题去重 */
-          var oldMats = loadMaterialsFromCache() || [];
-          var existingTitles = {};
-          oldMats.forEach(function(om) { existingTitles[om.title] = true; });
-          var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
-          materials = oldMats.concat(freshItems);
-          /* 按发布日期降序：最新的排最前面 */
-          materials.sort(function(a, b) {
-            var da = a.publishedAt || "";
-            var db = b.publishedAt || "";
-            if (da > db) return -1;
-            if (da < db) return 1;
-            return 0;
+            /* === Hook: afterMaterials === */
+            var matCtx = Hooks.trigger(Hooks.AFTER_MATERIALS, { materials: materials });
+            materials = matCtx.materials;
+            /* =========================== */
+
+            state.activeCategory = "全部";
+            renderMetrics();
+            renderQuickTags();
+            renderTabs();
+            renderMaterials();
+            saveMaterialsToCache(materials);
+
+            showToast("已从安全素材管线获取 " + items.length + " 条，新增 " + freshItems.length + " 条，累积 " + materials.length + " 条");
+            btn.disabled = false;
+            btn.textContent = "获取安全素材";
+          }).catch(function(err) {
+            showToast("抓取失败：" + (err.message || "网络错误"));
+            btn.disabled = false;
+            btn.textContent = "获取安全素材";
+            console.warn("fetchTodayMaterials 失败:", err);
           });
-          categories = ["全部"];
-          var seenCat = {};
-          materials.forEach(function(m2) {
-            if (!seenCat[m2.category]) {
-              seenCat[m2.category] = true;
-              categories.push(m2.category);
-            }
-          });
-          quickTags = materials.slice(0, 6).map(function(m3) {
-            return "我要做一篇" + m3.title.substring(0, 30) + "相关的安全园地图文";
-          });
-
-          /* === Hook: afterMaterials === */
-          var matCtx = Hooks.trigger(Hooks.AFTER_MATERIALS, { materials: materials });
-          materials = matCtx.materials;
-          /* =========================== */
-
-          state.activeCategory = "全部";
-          renderMetrics();
-          renderQuickTags();
-          renderTabs();
-          renderMaterials();
-          saveMaterialsToCache(materials);
-
-          showToast("已从 " + RSS_SOURCES.length + " 个新闻源抓取 " + items.length + " 条，新增 " + freshItems.length + " 条，累积 " + materials.length + " 条");
-          btn.disabled = false;
-          btn.textContent = "获取安全素材";
-        }).catch(function(err) {
-          showToast("抓取失败：" + (err.message || "网络错误"));
-          btn.disabled = false;
-          btn.textContent = "获取安全素材";
-          console.warn("fetchTodayMaterials 失败:", err);
-        });
       }
 
 
@@ -2257,7 +2229,7 @@ var RSS_SOURCES = [
             return [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: result.content, source: "原文", summary: result.content.substring(0, 200) }];
           }).catch(function(e) {
             console.warn("原文抓取失败，回退 Bing 搜索:", e.message);
-            return searchBocha(topic).then(function(results) {
+            return searchBocha(topic, selectedMaterial !== null).then(function(results) {
               if (!results || results.length === 0) throw new Error("NO_RESULTS");
               return Promise.all(results.map(fetchArticleContent)).then(function() { return results; });
             });
@@ -2265,7 +2237,7 @@ var RSS_SOURCES = [
         } else {
           // 没有原文链接，走 Bing 搜索
           stepProgress(0);
-          searchPromise = searchBocha(topic).then(function(results) {
+          searchPromise = searchBocha(topic, selectedMaterial !== null).then(function(results) {
             if (!results || results.length === 0) throw new Error("NO_RESULTS");
             return Promise.all(results.map(fetchArticleContent)).then(function() { return results; });
           });
@@ -2344,7 +2316,7 @@ var RSS_SOURCES = [
       }
 
       function buildAISystemPrompt(searchResults) {
-        var base = "你是一个服务国企工会和煤矿安全宣传的资深图文编辑。你的任务是为\u201C强安兴企安全园地\u201D撰写一篇完整的、供人工审核后使用的安全教育图文草稿。\n\n核心要求：\n0. 必须严格基于提供的搜索结果撰写，不可凭空编造数据和案例。每引用一个搜索结果中的事实，应在文中标注来源。\n1. 输出严格 JSON，包含 title、titleAlternatives、lead、content、imageSuggestions、reviewReminders、references 七个字段\n2. title：一个让人想点进去看的标题，不低俗不标题党，但要抓人眼球\n3. titleAlternatives：3个备选标题的数组，每个标题各具风格（如一个偏严肃、一个偏接地气、一个偏提问式），供编辑最终选用\n4. lead：适合手机端阅读的短导语（2-3句话），点出核心安全问题和阅读价值，吸引读者往下看，不超过80字\n5. content：正文，用 HTML 片段格式输出。必须达到 800-1500 字。结构要求：\n   - 开头：用真实案例/数据/场景切入（2-3段），让读者感觉这事跟自己有关\n   - 正文：至少 4-5 个小节（用 h3 标签），每节 150-300 字。结构是「问题是什么 → 为什么危险 → 怎么做才对 → 做完这一步下一步该做什么」，把安全提醒变成可操作的具体步骤\n   - 结尾：落到行动，告诉读者「现在就去检查XX」「今天下班前做XX」，不要喊口号\n   - 不要只写\"注意安全\"\"加强管理\"，要写具体的操作指引\n6. imageSuggestions：配图建议数组（3-5条，每条是具体场景描述而非英文关键词，如\"矿工班前会现场照片，展现酒精检测环节\"\"防汛巡查人员在矿井口检查排水设施\"\"高温作业现场发放防暑降温物资\"）\n7. reviewReminders：发布前审核提醒数组（2-4条，如\"涉及领导行程不写具体预测\"\"涉及事故不夸大不猎奇\"\"涉及统计数据需二次核实原始来源\"\"涉及具体企业名称需确认是否可公开\"）\n8. references：参考来源数组（每条含 source 和 url 两个字段，列出文中引用的事实来源，如{\"source\":\"国家矿山安全监察局\",\"url\":\"https://...\"}）\n9. 不要出现\u201C开头三句话\u201D\u201C标题风格\u201D\u201C智能拆解\u201D\u201C为什么这样写\u201D等元信息\n10. 宣传口径要稳妥，党政/重大纪念日/灾害/健康都要正面宣传\n11. 不编造领导行程、未确认会议、未给出的数据\n12. 健康类只做科普提醒，不做诊断治疗建议\n13. 语言要接地气，像老师傅跟工友聊天，不要官八股\\n14. 这是供人工审核后使用的图文草稿，不可直接发布";
+        var base = `你是一个服务国企工会和煤矿安全宣传的资深图文编辑。你的任务是为\u201C强安兴企安全园地\u201D撰写一篇完整的、供人工审核后使用的安全教育图文草稿。\n\n核心要求：\n0. 必须严格基于提供的搜索结果撰写，不可凭空编造数据和案例。不要在 content 正文中插入"来源一""来源二"等引用标注。\n1. 输出严格 JSON，包含 title、titleAlternatives、lead、content、imageSuggestions、reviewReminders、references 七个字段\n2. title：一个让人想点进去看的标题，不低俗不标题党，但要抓人眼球\n3. titleAlternatives：3个备选标题的数组，每个标题各具风格（如一个偏严肃、一个偏接地气、一个偏提问式），供编辑最终选用\n4. lead：适合手机端阅读的短导语（2-3句话），点出核心安全问题和阅读价值，吸引读者往下看，不超过80字\n5. content：正文，用 HTML 片段格式输出。必须达到 800-1500 字。结构要求：\n   - 开头：用真实案例/数据/场景切入（2-3段），让读者感觉这事跟自己有关\n   - 正文：至少 4-5 个小节（用 h3 标签），每节 150-300 字。结构是「问题是什么 → 为什么危险 → 怎么做才对 → 做完这一步下一步该做什么」，把安全提醒变成可操作的具体步骤\n   - 结尾：落到行动，告诉读者「现在就去检查XX」「今天下班前做XX」，不要喊口号\n   - 不要只写\"注意安全\"\"加强管理\"，要写具体的操作指引\n6. imageSuggestions：配图建议数组（3-5条，每条是具体场景描述而非英文关键词，如\"矿工班前会现场照片，展现酒精检测环节\"\"防汛巡查人员在矿井口检查排水设施\"\"高温作业现场发放防暑降温物资\"）\n7. reviewReminders：发布前审核提醒数组（2-4条，如\"涉及领导行程不写具体预测\"\"涉及事故不夸大不猎奇\"\"涉及统计数据需二次核实原始来源\"\"涉及具体企业名称需确认是否可公开\"）\n8. references：参考来源数组（每条含 source 和 url 两个字段，仅用于侧栏展示供编辑核对出处，不要在 content 正文中插入来源标注）\n9. 不要出现\u201C开头三句话\u201D\u201C标题风格\u201D\u201C智能拆解\u201D\u201C为什么这样写\u201D等元信息\n10. 宣传口径要稳妥，党政/重大纪念日/灾害/健康都要正面宣传\n11. 不编造领导行程、未确认会议、未给出的数据\n12. 健康类只做科普提醒，不做诊断治疗建议\n13. 语言要接地气，像老师傅跟工友聊天，不要官八股\\n14. 这是供人工审核后使用的图文草稿，不可直接发布`;
         var jsonFormat = "\n\nJSON 格式：\n{\"title\":\"文章标题\",\"titleAlternatives\":[\"备选标题1\",\"备选标题2\",\"备选标题3\"],\"lead\":\"适合手机阅读的短导语，2-3句话\",\"content\":\"<p>开头勾人段落</p><h3>小标题</h3><p>正文段落</p><p>结尾段落</p>\",\"imageSuggestions\":[\"矿工班前会现场照片\",\"防汛巡查现场图\",\"高温作业防暑实拍\"],\"reviewReminders\":[\"审核提醒1\",\"审核提醒2\",\"审核提醒3\"],\"references\":[{\"source\":\"来源名称\",\"url\":\"https://来源链接\"}]}";
         if (!searchResults || !searchResults.length) return base + jsonFormat;
         var formattedResults = searchResults.map(function(r, i) {
@@ -3019,8 +2991,8 @@ var RSS_SOURCES = [
           if(window.__initDone) {
             db.style.background = "#161";
             log("init OK ✓");
-            // 3秒后隐藏
-            setTimeout(function(){ db.style.display="none"; }, 3000);
+            // 快速隐藏，避免用户误以为页面卡在 loading
+            setTimeout(function(){ db.style.display="none"; }, 500);
           } else {
             err("init NOT done after 1s!");
           }
