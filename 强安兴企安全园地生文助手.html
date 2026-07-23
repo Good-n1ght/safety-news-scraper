@@ -1508,6 +1508,25 @@ function gd(key, fallback) {
 }
 
 
+      /* 统一裁剪：去重 + 质量分降序 + 截断至上限 */
+      var MAX_MATERIALS = 30;
+      function normalizeAndCapMaterials(list) {
+        var seen = {};
+        var deduped = [];
+        for (var i = 0; i < list.length; i++) {
+          var t = (list[i].title || "").trim();
+          if (!t || seen[t]) continue;
+          seen[t] = true;
+          deduped.push(list[i]);
+        }
+        deduped.sort(function(a, b) {
+          var sd = (b.score || 0) - (a.score || 0);
+          if (sd !== 0) return sd;
+          return (b.publishedAt || "").localeCompare(a.publishedAt || "");
+        });
+        return deduped.slice(0, MAX_MATERIALS);
+      }
+
       function loadMaterialsFromCache() {
         try {
           var raw = localStorage.getItem(MATERIALS_LS_KEY);
@@ -1531,7 +1550,7 @@ function gd(key, fallback) {
 
       /* 从 localStorage 缓存恢复素材（v2 key），首次打开或缓存过期时为空 */
       var cachedMats = loadMaterialsFromCache();
-      var materials = cachedMats || [];
+      var materials = normalizeAndCapMaterials(cachedMats || []);
 
       var categories = ["全部"];
       var seen = {};
@@ -1817,20 +1836,12 @@ function fetchArticleContent(item) {
               });
             }
 
-            /* 累积合并：旧库 + 新抓取，标题去重 */
+            /* 累积合并：旧库 + 新抓取，标题去重，统一裁剪 */
             var oldMats = loadMaterialsFromCache() || [];
             var existingTitles = {};
             oldMats.forEach(function(om) { existingTitles[om.title] = true; });
             var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
-            var MAX_LOCAL_STORED = 30;
-            materials = oldMats.concat(freshItems);
-            /* 按质量分降序（同分按日期降序），截断至30条 */
-            materials.sort(function(a, b) {
-              var sd = (b.score || 0) - (a.score || 0);
-              if (sd !== 0) return sd;
-              return (b.publishedAt || "").localeCompare(a.publishedAt || "");
-            });
-            materials = materials.slice(0, MAX_LOCAL_STORED);
+            materials = normalizeAndCapMaterials(oldMats.concat(freshItems));
             categories = ["全部"];
             var seenCat = {};
             materials.forEach(function(m2) {
@@ -1990,6 +2001,7 @@ function fetchArticleContent(item) {
                   if (!item.publishedAt) item.publishedAt = "";
                 });
                 materials = materials.concat(newItems);
+                materials = normalizeAndCapMaterials(materials);
                 showToast("已合并 " + newItems.length + " 条新素材（跳过 " + (importItems.length - newItems.length) + " 条重复）");
               } else {
                 // 直接替换
@@ -2006,6 +2018,7 @@ function fetchArticleContent(item) {
                     review: !!item.review
                   };
                 });
+                materials = normalizeAndCapMaterials(materials);
                 showToast("已导入 " + importItems.length + " 条素材（替换原有数据）");
               }
               // 刷新分类、缓存和 UI
