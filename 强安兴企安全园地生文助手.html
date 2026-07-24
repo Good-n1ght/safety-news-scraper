@@ -1842,6 +1842,11 @@ function fetchArticleContent(item) {
             oldMats.forEach(function(om) { existingTitles[om.title] = true; });
             var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
             materials = normalizeAndCapMaterials(oldMats.concat(freshItems));
+            /* 统计新素材实际存活数（归一化后仍在列表中的） */
+            var survivedNew = 0;
+            var finalTitles = {};
+            materials.forEach(function(m) { finalTitles[m.title] = true; });
+            freshItems.forEach(function(fi) { if (finalTitles[fi.title]) survivedNew++; });
             categories = ["全部"];
             var seenCat = {};
             materials.forEach(function(m2) {
@@ -1866,7 +1871,7 @@ function fetchArticleContent(item) {
             renderMaterials();
             saveMaterialsToCache(materials);
 
-            showToast("已从安全素材管线获取 " + items.length + " 条，新增 " + freshItems.length + " 条，累积 " + materials.length + " 条");
+            showToast("管线返回 " + items.length + " 条，其中 " + survivedNew + " 条新素材入库，当前共 " + materials.length + " 条（质量分择优保留）");
             btn.disabled = false;
             btn.textContent = "获取安全素材";
           }).catch(function(err) {
