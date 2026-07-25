@@ -14,8 +14,8 @@
     <title>强安兴企安全园地智能图文助手</title>
 <script async src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" onerror="console.warn('html2canvas CDN failed, export disabled')"></script>
 <!-- 扩展系统 -->
-<script src="extensions/hooks.js"></script>
-<script src="extensions/config.js"></script>
+<script src="extensions/hooks.js" defer></script>
+<script src="extensions/config.js" defer></script>
 
     <style>
 :root {
@@ -1138,7 +1138,7 @@ select:focus {
 
           <input class="search-input" id="materialSearch" type="search" placeholder="可选：手动搜索安全、健康、工会、节日、党政等素材" />
 
-          <div class="tabs" id="categoryTabs" role="tablist"></div>
+          <div class="tabs" id="categoryTabs" role="tablist" aria-label="素材分类"></div>
           <div class="material-list" id="materialList"></div>
         </div>
       </section>
@@ -1271,7 +1271,6 @@ select:focus {
    共享 JS — 模型配置、设置面板、API 调用、Pexels 配图
    被 build.py 内联到各产品 HTML 中
    ================================================================ */
-
 
 
 /* 兼容旧的 MODEL_BASE_URLS */
@@ -2111,7 +2110,8 @@ function fetchArticleContent(item) {
         els.categoryTabs.innerHTML = categories
           .map(function(category) {
             var active = state.activeCategory === category ? " active" : "";
-            return '<button class="tab' + active + '" type="button" data-category="' + escapeHtml(category) + '">' + escapeHtml(category) + '</button>';
+            var selected = state.activeCategory === category ? "true" : "false";
+            return '<button class="tab' + active + '" type="button" role="tab" aria-selected="' + selected + '" data-category="' + escapeHtml(category) + '">' + escapeHtml(category) + '</button>';
           })
           .join("");
       }
@@ -3032,14 +3032,14 @@ function fetchArticleContent(item) {
         var msgs = [];
         function log(m){ msgs.push(m); if(db) db.textContent = msgs.join(" | "); console.log("[DIAG]", m); }
         function err(m){ msgs.push("ERR:"+m); if(db){ db.textContent = msgs.join(" | "); db.style.color="#f33"; } console.error("[DIAG]", m); }
-        
+
         log("script start");
         log("els ready="+(typeof els!=="undefined"));
         log("materials ready="+(typeof materials!=="undefined")+" len="+(typeof materials!=="undefined"?materials.length:"?"));
-        
+
         window.__diag_log = log;
         window.__diag_err = err;
-        
+
         // 延迟检查 init 是否完成
         setTimeout(function(){
           if(window.__initDone) {
