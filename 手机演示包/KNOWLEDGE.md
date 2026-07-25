@@ -2,7 +2,7 @@
 
 > 写给未来接手此项目的 AI / 开发者：本文档记录完整架构、踩过的坑、扩展方式，读完即可上手修改或新建同类项目。
 >
-> 最后更新：2026-07-18（v4 — 选题日历 + 栏目模板）；2026-07-19（v4.1 — 历史稿件 + 手机适配；v4.2 — CORS 代理迁移）；2026-07-20（v5 — 博查 API 替代 Bing/SCF 代理搜索、getProxy() 废弃、项目目录迁移至 F 盘）
+> 最后更新：2026-07-18（v4 — 选题日历 + 栏目模板）；2026-07-19（v4.1 — 历史稿件 + 手机适配；v4.2 — CORS 代理迁移）；2026-07-20（v5 — 博查 API 替代 Bing/SCF 代理搜索、getProxy() 废弃、项目目录迁移至 F 盘）；2026-07-23（v5.1 — 30条上限补全 + 质量分排序 + 手动输入去关键词污染）；2026-07-25（v5.2 — 150条滚动积累 + 绿色「新增」标记 + normalizeAndCapMaterials 统一入口；v5.3 — SEO 元数据优化：meta description + JSON-LD + 缓存策略注释；v5.4 — 性能+无障碍优化：defer 外部脚本 + ARIA 修复 + 内联 JS 空白压缩；v5.5 — 排序修正：日期降序 + 缓存刷新：gist-v5 + HTML 同步）
 
 ---
 
@@ -163,11 +163,13 @@
 
 **已知问题**：无法区分正文和导航/页脚。某些网站正文在 JS 动态加载中（无法抓到）。某些网站反爬返回验证码页面。
 
-### 2.4 素材库（Gist + 缓存）
+### 2.4 素材库（Gist + localStorage 缓存，30条上限）
 
 **数据来源**：
 - **热数据**：GitHub Gist → `https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json`
-- **冷数据**：localStorage `safety_materials`，缓存 30 天
+- **缓存**：localStorage `huanxing_materials_cache_v{N}`（版本号控制清缓存），有效期 30 天
+- **上限**：采集脚本 `MAX_TOTAL_STORED=30`，前端合并逻辑 `MAX_LOCAL_STORED=30`，双重截断（2026-07-23 补全，此前仅脚本有上限）
+- **排序**：新增置顶 → 日期降序（2026-07-25 v5.5 从质量分降序改为日期降序，非新增素材严格按发布日期从新到旧排列）
 
 **为什么用 Gist**：
 - 免费、无需服务器
@@ -632,3 +634,4 @@ var GENERATION_DEFAULTS = {
 6. **GLM 与其他模型行为差异**：response_format 支持程度、返回 JSON 格式严格度不同，`parseJsonContent` 已做兼容但边缘情况仍可能出错
 7. **extensions/ 目录依赖**：`hooks.js` 和 `config.js` 是运行时必需文件，缺失会导致页面白屏。发布/演示时必须确保该目录完整
 8. **C 盘 source/repos 目录残留**：已废弃但未物理删除，新接手应忽略 C 盘、只关注 F 盘 `强安系列_手机展示/`
+*（内容由AI生成，仅供参考）*

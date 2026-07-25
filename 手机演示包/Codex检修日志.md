@@ -1,15 +1,3 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_cdf5bf8e87da11f1b66e525400e6dd8f
-    ReservedCode1: X3fDQz5j7yUHc+7doKy/dQQ5Plz/7xvwzLFrTl4+2DpR8zEKyO7dGBqKuGCA0x5qUmiz13z3rVXL2bKfz881u/dmnRiostYlgVH+gb9UkYamVIDAF+eodjdtfQTljHraTmv6XAWHNM0Xqu5sDCjPxNlSABAFkKL1DTM1IrhNMlemlrbUKvjuPvVSyFY=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_cdf5bf8e87da11f1b66e525400e6dd8f
-    ReservedCode2: X3fDQz5j7yUHc+7doKy/dQQ5Plz/7xvwzLFrTl4+2DpR8zEKyO7dGBqKuGCA0x5qUmiz13z3rVXL2bKfz881u/dmnRiostYlgVH+gb9UkYamVIDAF+eodjdtfQTljHraTmv6XAWHNM0Xqu5sDCjPxNlSABAFkKL1DTM1IrhNMlemlrbUKvjuPvVSyFY=
----
-
-
 ## 2026/7/25 v5.5 排序+缓存+同步修复
 
 - **排序修复**：素材列表排序从「新增置顶 → 质量分降序 → 日期降序」改为「新增置顶 → 日期降序」，非新增素材严格按发布日期从新到旧排列

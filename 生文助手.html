@@ -587,7 +587,104 @@ select:focus {
   }
 
   .secondary-action {
-    width: 118px;
+    width: auto;
+    flex: 1;
+  }
+
+  .section-head {
+    flex-wrap: wrap;
+  }
+
+  .section-head > div {
+    flex-wrap: wrap;
+  }
+
+  .text-button {
+    white-space: normal;
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-head h2 {
+    font-size: 16px;
+  }
+
+  .section-head > div {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .text-button {
+    font-size: 11px;
+    padding: 5px 9px;
+  }
+
+  .secondary-action {
+    font-size: 13px;
+    min-height: 38px;
+  }
+
+  .form-grid {
+    gap: 8px;
+  }
+
+  .form-grid label select {
+    width: 100%;
+    font-size: 13px;
+  }
+
+  .primary-action {
+    font-size: 15px;
+    min-height: 42px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .topbar h1 {
+    font-size: 18px;
+  }
+
+  .compose-panel,
+  .material-panel,
+  .result-panel {
+    padding: 10px;
+  }
+
+  .search-input {
+    font-size: 13px;
+  }
+
+  .tab {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .tabs {
+    gap: 4px;
+  }
+
+  .metric span {
+    font-size: 17px;
+  }
+
+  .metric p {
+    font-size: 11px;
+  }
+
+  .btn {
+    font-size: 12px;
+    padding: 0 10px;
+    height: 34px;
   }
 }
 
@@ -906,6 +1003,26 @@ select:focus {
   color: var(--green);
 }
 
+/* ===== 历史稿件 ===== */
+.history-section { padding: 32px; max-width: 1200px; margin: 0 auto; }
+.history-section .section-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+.history-list { display: flex; flex-direction: column; gap: 12px; }
+.history-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px 20px; cursor: pointer; transition: box-shadow 0.15s;
+}
+.history-card:hover { box-shadow: var(--shadow); }
+.history-card .hc-title { font-size: 16px; font-weight: 700; margin: 0 0 4px 0; color: var(--text); }
+.history-card .hc-meta { font-size: 13px; color: var(--muted); margin: 0; display: flex; gap: 16px; flex-wrap: wrap; }
+.history-card .hc-actions { display: flex; gap: 8px; margin-top: 10px; }
+.history-card .hc-action-btn {
+  font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--text); cursor: pointer; transition: all 0.15s;
+}
+.history-card .hc-action-btn:hover { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+.history-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 15px; }
+.history-search { margin-bottom: 16px; }
+
     </style>
     <script type="application/ld+json">
     {
@@ -1034,6 +1151,7 @@ select:focus {
           </div>
           <div style="display:flex;gap:8px;">
             <button class="secondary-action" id="copyBtn">复制全文</button>
+            <button class="secondary-action" id="saveHistoryBtn" title="保存当前稿件到历史记录">保存到历史</button>
           </div>
         </div>
 
@@ -1087,6 +1205,24 @@ select:focus {
           </button>
         </div>
       </section>
+
+      <section class="history-section" id="historySection">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">历史稿件</p>
+            <h2 id="historyTitle">已保存的稿件</h2>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="text-button" id="refreshHistoryBtn">刷新</button>
+          </div>
+        </div>
+        <div class="history-search">
+          <input class="search-input" id="historySearch" type="search" placeholder="搜索历史稿件标题或正文关键词" />
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">暂无历史稿件，生成文章后点击「保存到历史」即可存档</div>
+        </div>
+      </section>
     </main>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1110,6 +1246,12 @@ select:focus {
       <label class="setting-label" for="baseUrlInput">Base URL</label>
       <input type="text" id="baseUrlInput" placeholder="https://api.deepseek.com" />
       <p class="hint">选择模型后自动填入默认地址，也可手动修改</p>
+    </div>
+    <div class="setting-row">
+      <label class="setting-label">历史稿件存储（Gist）</label>
+      <input type="text" id="gistIdInput" placeholder="Gist ID（如 eb0fea051748ee0b33070cf7bd16be4a）" style="margin-bottom:8px;" />
+      <input type="password" id="gistTokenInput" placeholder="GitHub Token（需 gist 权限）" />
+      <p class="hint">首次使用需先创建 <a href="https://gist.github.com" target="_blank" rel="noopener">Gist</a> 并生成 <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">GitHub Token</a></p>
     </div>
     <div class="settings-actions">
       <button class="btn-cancel" id="settingsCancel">取消</button>
@@ -1163,6 +1305,10 @@ window.DS_API_MODEL     = null;
   if (info && info.chatEndpoint) window.DS_CHAT_ENDPOINT = info.chatEndpoint;
   if (info && info.apiModel)     window.DS_API_MODEL = info.apiModel;
 })();
+/* ---------- Gist 配置 ---------- */
+window.GIST_ID    = localStorage.getItem("gist_id")    || "eb0fea051748ee0b33070cf7bd16be4a";
+window.GIST_TOKEN = localStorage.getItem("gist_token") || "";
+window.GIST_RAW   = "https://gist.githubusercontent.com/Good-n1ght/" + window.GIST_ID + "/raw/drafts.json";
 /* ---------- 工具函数 ---------- */
 function showToast(msg) {
   var toast = document.getElementById("toast");
@@ -1197,7 +1343,8 @@ function initSettings() {
     brandSelect: document.getElementById("brandSelect"),
     modelSelect: document.getElementById("modelSelect"),
     apiKeyInput: document.getElementById("apiKeyInput"),
-    baseUrlInput: document.getElementById("baseUrlInput")
+    baseUrlInput: document.getElementById("baseUrlInput"),
+    gistIdInput: document.getElementById("gistIdInput")
   };
 
   if (!els.settingsBtn || !els.settingsOverlay) return;
@@ -1205,6 +1352,7 @@ function initSettings() {
   // 读取当前设置
   if (els.apiKeyInput) els.apiKeyInput.value = window.DS_API_KEY || "";
   if (els.baseUrlInput) els.baseUrlInput.value = window.DS_BASE_URL || DEFAULT_BASE_URL;
+  if (els.gistIdInput) els.gistIdInput.value = window.GIST_ID || "";
 
   // ---- 两级模型选择器 ----
   var savedModel = window.DS_MODEL || DEFAULT_MODEL;
@@ -1318,6 +1466,14 @@ function initSettings() {
     }
 
     els.settingsOverlay.hidden = true;
+      // 保存 Gist 配置
+      var gistId = els.gistIdInput ? els.gistIdInput.value.trim() : "";
+      var gistToken = els.gistTokenInput ? els.gistTokenInput.value.trim() : "";
+      if (gistId) { localStorage.setItem("gist_id", gistId); window.GIST_ID = gistId; }
+      else { localStorage.removeItem("gist_id"); }
+      if (gistToken) { localStorage.setItem("gist_token", gistToken); window.GIST_TOKEN = gistToken; }
+      else { localStorage.removeItem("gist_token"); }
+      window.GIST_RAW = "https://gist.githubusercontent.com/Good-n1ght/" + window.GIST_ID + "/raw/drafts.json";
     showToast("API 设置已保存");
   });
 }
@@ -1363,7 +1519,7 @@ function initSettings() {
       };
 
       /* ========== 素材数据（localStorage缓存优先，有效期15天） ========== */
-      var MATERIALS_CACHE_VERSION = 1;
+      var MATERIALS_CACHE_VERSION = 3;
       var MATERIALS_LS_KEY = "huanxing_materials_cache_v" + MATERIALS_CACHE_VERSION;
       var MATERIALS_CACHE_DAYS = 30;
 /* 安全读取 GENERATION_DEFAULTS，未加载 config.js 时回退硬编码值 */
@@ -1372,6 +1528,27 @@ function gd(key, fallback) {
   catch(e) { return fallback; }
 }
 
+
+      /* 统一裁剪：去重 + 新增置顶 + 质量分降序 + 截断至上限 */
+      var MAX_MATERIALS = 150;
+      function normalizeAndCapMaterials(list) {
+        var seen = {};
+        var deduped = [];
+        for (var i = 0; i < list.length; i++) {
+          var t = (list[i].title || "").trim();
+          if (!t || seen[t]) continue;
+          seen[t] = true;
+          deduped.push(list[i]);
+        }
+        /* 新增的置顶 → 再按发布日期降序（最新在前） */
+        deduped.sort(function(a, b) {
+          var na = a.isNew ? 1 : 0;
+          var nb = b.isNew ? 1 : 0;
+          if (na !== nb) return nb - na;
+          return (b.publishedAt || "").localeCompare(a.publishedAt || "");
+        });
+        return deduped.slice(0, MAX_MATERIALS);
+      }
 
       function loadMaterialsFromCache() {
         try {
@@ -1394,8 +1571,9 @@ function gd(key, fallback) {
         } catch(e) { console.warn("localStorage写入失败:", e); }
       }
 
+      /* 从 localStorage 缓存恢复素材（v2 key），首次打开或缓存过期时为空 */
       var cachedMats = loadMaterialsFromCache();
-      var materials = cachedMats || [];
+      var materials = normalizeAndCapMaterials(cachedMats || []);
 
       var categories = ["全部"];
       var seen = {};
@@ -1472,7 +1650,7 @@ function applyTemplate(tplKey) {
 /* ========== CORS 代理 ========== */
 if (typeof CORS_PROXY_LIST === 'undefined') {
 var CORS_PROXY_LIST = [
-  "https://1437883484-k88upcj3r3.ap-guangzhou.tencentscf.com/?url="
+  "https://1437883484-1xfayinfej.ap-guangzhou.tencentscf.com/?url="
 ];
 }
 var CORS_PROXY_IDX = 0;
@@ -1492,93 +1670,88 @@ var SEARCH_SOURCES = [
 ]
 };
 
-/* ========== Bing 搜索 ========== */
-function searchBing(topic) {
+/* ========== 博查 Web Search API ========== */
+function searchBocha(topic, injectCalendar) {
   /* === Hook: beforeSearch === */
   var searchCtx = Hooks.trigger(Hooks.BEFORE_SEARCH, { query: topic, sources: SEARCH_SOURCES });
   topic = searchCtx.query;
   var sources = searchCtx.sources;
   /* ======================== */
 
-  var allResults = [];
+  injectCalendar = (injectCalendar === undefined ? true : injectCalendar);
+  var calendarKW = injectCalendar ? getCalendarKeywords() : "";
+  var siteFilters = sources.map(function(s) { return s.site; }).join("|");
+  var query = topic + (calendarKW ? " " + calendarKW : "");
 
-  function fetchOne(src) {
-    var calendarKW = getCalendarKeywords();
-    var query = "site:" + src.site + " " + topic + (calendarKW ? " " + calendarKW : "");
-    var url = getProxy() + encodeURIComponent(
-      "https://cn.bing.com/search?q=" + encodeURIComponent(query) + "&setmkt=zh-CN&cc=CN&count=5"
-    );
-    var ctrl = new AbortController();
-    var t = setTimeout(function() { ctrl.abort(); }, gd("search_timeout_ms", 15000));
-    return fetch(url, { headers: { "Accept": "text/html" }, signal: ctrl.signal })
-      .then(function(r) { clearTimeout(t); if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-      .then(function(html) {
-        var results = [];
-        // 匹配 Bing HTML 搜索结果块
-        var re = /<li class="b_algo"[^>]*>[\s\S]*?<h2[^>]*>\s*<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/gi;
-        var m;
-        while ((m = re.exec(html)) && results.length < 5) {
-          var link = m[1];
-          var title = m[2].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-          var summary = m[3].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-          if (!title || link.indexOf("http") !== 0) continue;
-          // 过滤明显的无关结果
-          if (title.indexOf("Math Calculator") === 0 || title.indexOf("Online ") === 0) continue;
-          results.push({ title: title, link: link, summary: summary, source: src.name, content: "" });
-        }
-        // 回退：正则不匹配时尝试更宽松匹配
-        if (results.length === 0) {
-          var re2 = /<li class="b_algo"[^>]*>[\s\S]*?<a[^>]*href="(https?:\/\/[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
-          while ((m = re2.exec(html)) && results.length < 5) {
-            var t2 = m[2].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-            if (!t2) continue;
-            results.push({ title: t2, link: m[1], summary: t2, source: src.name, content: "" });
-          }
-        }
-        return results;
-      })
-      .catch(function(err) { console.warn("搜索失败: " + src.name, err); return []; });
-  }
-
-  return Promise.all(sources.map(fetchOne)).then(function(arrs) {
-    arrs.forEach(function(arr) { allResults = allResults.concat(arr); });
-    var seen = {};
-    var filtered = allResults.filter(function(r) { if (seen[r.link]) return false; seen[r.link] = true; return true; }).slice(0, 5);
+  return fetch("https://api.bocha.cn/v1/web-search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer sk-a980fe7a23034a7893367238ac828159"
+    },
+    body: JSON.stringify({ query: query, count: 10, freshness: "oneMonth", include: siteFilters })
+  })
+  .then(function(r) {
+    if (!r.ok) throw new Error("\u535a\u67e5 API HTTP " + r.status);
+    return r.json();
+  })
+  .then(function(data) {
+    if (data.code !== 200) throw new Error("\u535a\u67e5 API \u8fd4\u56de\u9519\u8bef: " + (data.message || data.code));
+    var webPages = (data.data && data.data.webPages && data.data.webPages.value) || [];
+    var results = webPages.map(function(page) {
+      return {
+        title: page.name || "",
+        link: page.url || "",
+        summary: page.snippet || "",
+        source: page.siteName || "\u535a\u67e5\u641c\u7d22",
+        content: page.snippet || "",
+        datePublished: page.datePublished || ""
+      };
+    }).slice(0, 10);
 
     /* === Hook: afterSearch === */
-    var resultCtx = Hooks.trigger(Hooks.AFTER_SEARCH, { query: topic, results: filtered });
+    var resultCtx = Hooks.trigger(Hooks.AFTER_SEARCH, { query: topic, results: results });
     return resultCtx.results;
-  }).then(function(results) {
-    // 安全站点无结果时，回退通用 Bing 搜索
+  })
+  .then(function(results) {
     if (results.length === 0) {
-      console.log("安全站点无结果，回退通用搜索");
-      var url = getProxy() + encodeURIComponent(
-        "https://cn.bing.com/search?q=" + encodeURIComponent(topic + " 安全") + "&setmkt=zh-CN&cc=CN&count=10"
-      );
-      var ctrl = new AbortController();
-      var t = setTimeout(function() { ctrl.abort(); }, gd("search_timeout_ms", 15000));
-      return fetch(url, { headers: { "Accept": "text/html" }, signal: ctrl.signal })
-        .then(function(r) { clearTimeout(t); if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
-        .then(function(html) {
-          var re = /<li class="b_algo"[^>]*>[\s\S]*?<h2[^>]*>\s*<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/gi;
-          var m, generalResults = [];
-          while ((m = re.exec(html)) && generalResults.length < 5) {
-            var link = m[1], title = m[2].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-            var summary = m[3].replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
-            if (!title || link.indexOf("http") !== 0) continue;
-            generalResults.push({ title: title, link: link, summary: summary, source: "通用搜索", content: "" });
-          }
-          return generalResults;
-        })
-        .catch(function(e) { console.warn("通用搜索也失败:", e); return []; });
+      console.log("\u5b89\u5168\u7ad9\u70b9\u65e0\u7ed3\u679c\uff0c\u56de\u9000\u901a\u7528\u641c\u7d22");
+      return fetch("https://api.bocha.cn/v1/web-search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer sk-a980fe7a23034a7893367238ac828159"
+        },
+        body: JSON.stringify({ query: topic + " \u5b89\u5168", count: 10, freshness: "oneMonth" })
+      })
+      .then(function(r2) { if (!r2.ok) throw new Error("\u535a\u67e5 API HTTP " + r2.status); return r2.json(); })
+      .then(function(data2) {
+        if (data2.code !== 200) throw new Error("\u535a\u67e5 API \u8fd4\u56de\u9519\u8bef: " + (data2.message || data2.code));
+        var webPages2 = (data2.data && data2.data.webPages && data2.data.webPages.value) || [];
+        return webPages2.map(function(page) {
+          return {
+            title: page.name || "",
+            link: page.url || "",
+            summary: page.snippet || "",
+            source: page.siteName || "\u901a\u7528\u641c\u7d22",
+            content: page.snippet || "",
+            datePublished: page.datePublished || ""
+          };
+        }).slice(0, 10);
+      })
+      .catch(function(e2) { console.warn("\u901a\u7528\u641c\u7d22\u4e5f\u5931\u8d25:", e2); return []; });
     }
     return results;
+  })
+  .catch(function(err) {
+    console.warn("\u535a\u67e5\u641c\u7d22\u5931\u8d25:", err);
+    return [];
   });
 }
 
 /* ========== 抓取文章全文 ========== */
 function fetchArticleContent(item) {
-  var url = getProxy() + encodeURIComponent(item.link);
+  var url = item.link;
 
   /* === Hook: beforeFetch === */
   var fetchCtx = Hooks.trigger(Hooks.BEFORE_FETCH, { url: item.link, headers: { "Accept": "text/html" } });
@@ -1602,8 +1775,9 @@ function fetchArticleContent(item) {
       var fetchResultCtx = Hooks.trigger(Hooks.AFTER_FETCH, { url: item.link, content: item.content });
       item.content = fetchResultCtx.content;
       /* ======================= */
+      return item;
     })
-    .catch(function(err) { console.warn("抓取失败: " + item.link, err); item.content = item.summary; })
+    .catch(function(err) { console.warn("抓取失败: " + item.link, err); item.content = item.summary; return item; })
     .finally(function() { clearTimeout(timeout); });
 }
 
@@ -1641,98 +1815,103 @@ function fetchArticleContent(item) {
         btn.disabled = true;
         btn.textContent = "加载中...";
         var todayISO = new Date().toISOString().slice(0, 10);
+        var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json";
 
-        /* ===== 从 GitHub Gist raw URL 拉取云端抓取的 JSON 数据 ===== */
-        var rawUrl = (typeof GIST_RAW_URL !== "undefined" && GIST_RAW_URL)
-          ? GIST_RAW_URL
-          : "https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json";
-        var url = rawUrl + "?_t=" + Date.now();
+        /* 数据源版本标记：源切换后自动清旧缓存 */
+        var DS_VERSION = "gist-v5";
+        var oldVer = localStorage.getItem("mat_datasource_version");
+        if (oldVer !== DS_VERSION) {
+          localStorage.removeItem(MATERIALS_LS_KEY);
+          localStorage.setItem("mat_datasource_version", DS_VERSION);
+          console.log("数据源已切换，旧缓存已清理(" + MATERIALS_LS_KEY + ")");
+        }
 
-        fetch(url).then(function(r) {
-          if (!r.ok) throw new Error("HTTP " + r.status);
-          return r.json();
-        }).then(function(data) {
-          var rawItems = data.items || [];
-          if (rawItems.length === 0) {
-            throw new Error("云端暂无安全新闻数据");
-          }
-
-          /* 去重：按标准化标题 */
-          var deduped = [];
-          var seenTitles = {};
-          for (var q = 0; q < rawItems.length; q++) {
-            var norm = (rawItems[q].title || "").replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, "").toLowerCase().substring(0, 20);
-            if (!seenTitles[norm]) {
-              seenTitles[norm] = true;
-              deduped.push(rawItems[q]);
+        fetch(GIST_URL + "?_t=" + Date.now())
+          .then(function(resp) {
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            return resp.json();
+          })
+          .then(function(data) {
+            var rawItems = data.items || [];
+            if (rawItems.length === 0) {
+              throw new Error("安全素材管线暂无数据，请稍后重试");
             }
-          }
 
-          var items = [];
-          for (var s = 0; s < deduped.length; s++) {
-            var d = deduped[s];
-            var catText = d.title + " " + (d.summary || "");
-            /* 优先使用 JSON 中的 category/tags，缺失时用本地 classifyText/extractTags 生成 */
-            items.push({
-              id: "dy" + (s + 1),
-              title: d.title || "",
-              source: d.source || "",
-              sourceUrl: d.link || d.sourceUrl || "",
-              publishedAt: d.publishedAt || todayISO,
-              summary: d.summary || "",
-              category: d.category || classifyText(catText, d.source || ""),
-              tags: (d.tags && d.tags.length) ? d.tags : extractTags(d.title, d.summary || ""),
-              review: (d.review === true)
+            /* 去重 + 格式化 */
+            var items = [];
+            var seenIds = {};
+            for (var i = 0; i < rawItems.length; i++) {
+              var g = rawItems[i];
+              var gid = g.id || (g.title + g.source);
+              if (seenIds[gid]) continue;
+              seenIds[gid] = true;
+              items.push({
+                id: g.id || ("sg" + (i + 1)),
+                title: g.title || "",
+                source: g.source || "",
+                sourceUrl: g.link || "",
+                publishedAt: g.publishedAt || todayISO,
+                summary: g.summary || "",
+                category: g.category || classifyText(g.title + " " + (g.summary || ""), g.source || ""),
+                tags: g.tags || extractTags(g.title, g.summary || ""),
+                review: g.review || false,
+                score: g.score || 0
+              });
+            }
+
+            /* 累积合并：旧库 + 新抓取，标题去重，统一裁剪 */
+            var oldMats = loadMaterialsFromCache() || [];
+            /* 清除超过1天的旧"新增"标记 */
+            var todayStr = new Date().toISOString().slice(0, 10);
+            oldMats.forEach(function(om) {
+              if (om.isNew && om.addedAt && om.addedAt !== todayStr) {
+                om.isNew = false;
+              }
             });
-          }
+            var existingTitles = {};
+            oldMats.forEach(function(om) { existingTitles[om.title] = true; });
+            var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
+            /* 标记今天新增 */
+            freshItems.forEach(function(fi) { fi.isNew = true; fi.addedAt = todayStr; });
+            materials = normalizeAndCapMaterials(oldMats.concat(freshItems));
+            /* 统计新素材实际存活数（归一化后仍在列表中的） */
+            var survivedNew = 0;
+            var finalTitles = {};
+            materials.forEach(function(m) { finalTitles[m.title] = true; });
+            freshItems.forEach(function(fi) { if (finalTitles[fi.title]) survivedNew++; });
+            categories = ["全部"];
+            var seenCat = {};
+            materials.forEach(function(m2) {
+              if (!seenCat[m2.category]) {
+                seenCat[m2.category] = true;
+                categories.push(m2.category);
+              }
+            });
+            quickTags = materials.slice(0, 6).map(function(m3) {
+              return "我要做一篇" + m3.title.substring(0, 30) + "相关的安全园地图文";
+            });
 
-          /* 累积合并：旧库 + 新抓取，标题去重 */
-          var oldMats = loadMaterialsFromCache() || [];
-          var existingTitles = {};
-          oldMats.forEach(function(om) { existingTitles[om.title] = true; });
-          var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
-          var MAX_LOCAL_STORED = 30;
-          materials = oldMats.concat(freshItems);
-          /* 按质量分降序（同分按日期降序），截断至30条 */
-          materials.sort(function(a, b) {
-            var sd = (b.score || 0) - (a.score || 0);
-            if (sd !== 0) return sd;
-            return (b.publishedAt || "").localeCompare(a.publishedAt || "");
+            /* === Hook: afterMaterials === */
+            var matCtx = Hooks.trigger(Hooks.AFTER_MATERIALS, { materials: materials });
+            materials = matCtx.materials;
+            /* =========================== */
+
+            state.activeCategory = "全部";
+            renderMetrics();
+            renderQuickTags();
+            renderTabs();
+            renderMaterials();
+            saveMaterialsToCache(materials);
+
+            showToast("管线返回 " + items.length + " 条，其中 " + survivedNew + " 条新素材入库，当前共 " + materials.length + " 条（质量分择优保留）");
+            btn.disabled = false;
+            btn.textContent = "获取安全素材";
+          }).catch(function(err) {
+            showToast("抓取失败：" + (err.message || "网络错误"));
+            btn.disabled = false;
+            btn.textContent = "获取安全素材";
+            console.warn("fetchTodayMaterials 失败:", err);
           });
-          materials = materials.slice(0, MAX_LOCAL_STORED);
-          categories = ["全部"];
-          var seenCat = {};
-          materials.forEach(function(m2) {
-            if (!seenCat[m2.category]) {
-              seenCat[m2.category] = true;
-              categories.push(m2.category);
-            }
-          });
-          quickTags = materials.slice(0, 6).map(function(m3) {
-            return "我要做一篇" + m3.title.substring(0, 30) + "相关的安全园地图文";
-          });
-
-          /* === Hook: afterMaterials === */
-          var matCtx = Hooks.trigger(Hooks.AFTER_MATERIALS, { materials: materials });
-          materials = matCtx.materials;
-          /* =========================== */
-
-          state.activeCategory = "全部";
-          renderMetrics();
-          renderQuickTags();
-          renderTabs();
-          renderMaterials();
-          saveMaterialsToCache(materials);
-
-          showToast("已从云端抓取 " + items.length + " 条，新增 " + freshItems.length + " 条，累积 " + materials.length + " 条");
-          btn.disabled = false;
-          btn.textContent = "获取安全素材";
-        }).catch(function(err) {
-          showToast("抓取失败：" + (err.message || "网络错误"));
-          btn.disabled = false;
-          btn.textContent = "获取安全素材";
-          console.warn("fetchTodayMaterials 失败:", err);
-        });
       }
 
 
@@ -1859,6 +2038,7 @@ function fetchArticleContent(item) {
                   if (!item.publishedAt) item.publishedAt = "";
                 });
                 materials = materials.concat(newItems);
+                materials = normalizeAndCapMaterials(materials);
                 showToast("已合并 " + newItems.length + " 条新素材（跳过 " + (importItems.length - newItems.length) + " 条重复）");
               } else {
                 // 直接替换
@@ -1875,6 +2055,7 @@ function fetchArticleContent(item) {
                     review: !!item.review
                   };
                 });
+                materials = normalizeAndCapMaterials(materials);
                 showToast("已导入 " + importItems.length + " 条素材（替换原有数据）");
               }
               // 刷新分类、缓存和 UI
@@ -1907,6 +2088,7 @@ function fetchArticleContent(item) {
         renderMaterials();
         bindEvents();
         initSettings();
+        setTimeout(initHistory, 1000);
       }
 
       function renderMetrics() {
@@ -1955,6 +2137,7 @@ function fetchArticleContent(item) {
             return '<button class="material-item' + selected + '" type="button" data-material-id="' + item.id + '">' +
               '<div class="material-meta">' +
                 '<span class="badge">' + escapeHtml(item.category) + '</span>' +
+                (item.isNew ? '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;">新增</span>' : '') +
                 (item.review ? '<span class="badge" style="background:#fef2f2;color:#b42318;font-weight:600;">待审</span>' : '') +
                 '<span class="source-name">' + escapeHtml(item.publishedAt) + '</span>' +
               '</div>' +
@@ -2098,7 +2281,7 @@ function fetchArticleContent(item) {
             return [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: result.content, source: "原文", summary: result.content.substring(0, 200) }];
           }).catch(function(e) {
             console.warn("原文抓取失败，回退 Bing 搜索:", e.message);
-            return searchBing(topic).then(function(results) {
+            return searchBocha(topic, selectedMaterial !== null).then(function(results) {
               if (!results || results.length === 0) throw new Error("NO_RESULTS");
               return Promise.all(results.map(fetchArticleContent)).then(function() { return results; });
             });
@@ -2106,7 +2289,7 @@ function fetchArticleContent(item) {
         } else {
           // 没有原文链接，走 Bing 搜索
           stepProgress(0);
-          searchPromise = searchBing(topic).then(function(results) {
+          searchPromise = searchBocha(topic, selectedMaterial !== null).then(function(results) {
             if (!results || results.length === 0) throw new Error("NO_RESULTS");
             return Promise.all(results.map(fetchArticleContent)).then(function() { return results; });
           });
@@ -2185,7 +2368,7 @@ function fetchArticleContent(item) {
       }
 
       function buildAISystemPrompt(searchResults) {
-        var base = "你是一个服务国企工会和煤矿安全宣传的资深图文编辑。你的任务是为\u201C强安兴企安全园地\u201D撰写一篇完整的、供人工审核后使用的安全教育图文草稿。\n\n核心要求：\n0. 必须严格基于提供的搜索结果撰写，不可凭空编造数据和案例。每引用一个搜索结果中的事实，应在文中标注来源。\n1. 输出严格 JSON，包含 title、titleAlternatives、lead、content、imageSuggestions、reviewReminders、references 七个字段\n2. title：一个让人想点进去看的标题，不低俗不标题党，但要抓人眼球\n3. titleAlternatives：3个备选标题的数组，每个标题各具风格（如一个偏严肃、一个偏接地气、一个偏提问式），供编辑最终选用\n4. lead：适合手机端阅读的短导语（2-3句话），点出核心安全问题和阅读价值，吸引读者往下看，不超过80字\n5. content：正文，用 HTML 片段格式输出。必须达到 800-1500 字。结构要求：\n   - 开头：用真实案例/数据/场景切入（2-3段），让读者感觉这事跟自己有关\n   - 正文：至少 4-5 个小节（用 h3 标签），每节 150-300 字。结构是「问题是什么 → 为什么危险 → 怎么做才对 → 做完这一步下一步该做什么」，把安全提醒变成可操作的具体步骤\n   - 结尾：落到行动，告诉读者「现在就去检查XX」「今天下班前做XX」，不要喊口号\n   - 不要只写\"注意安全\"\"加强管理\"，要写具体的操作指引\n6. imageSuggestions：配图建议数组（3-5条，每条是具体场景描述而非英文关键词，如\"矿工班前会现场照片，展现酒精检测环节\"\"防汛巡查人员在矿井口检查排水设施\"\"高温作业现场发放防暑降温物资\"）\n7. reviewReminders：发布前审核提醒数组（2-4条，如\"涉及领导行程不写具体预测\"\"涉及事故不夸大不猎奇\"\"涉及统计数据需二次核实原始来源\"\"涉及具体企业名称需确认是否可公开\"）\n8. references：参考来源数组（每条含 source 和 url 两个字段，列出文中引用的事实来源，如{\"source\":\"国家矿山安全监察局\",\"url\":\"https://...\"}）\n9. 不要出现\u201C开头三句话\u201D\u201C标题风格\u201D\u201C智能拆解\u201D\u201C为什么这样写\u201D等元信息\n10. 宣传口径要稳妥，党政/重大纪念日/灾害/健康都要正面宣传\n11. 不编造领导行程、未确认会议、未给出的数据\n12. 健康类只做科普提醒，不做诊断治疗建议\n13. 语言要接地气，像老师傅跟工友聊天，不要官八股\\n14. 这是供人工审核后使用的图文草稿，不可直接发布";
+        var base = `你是一个服务国企工会和煤矿安全宣传的资深图文编辑。你的任务是为\u201C强安兴企安全园地\u201D撰写一篇完整的、供人工审核后使用的安全教育图文草稿。\n\n核心要求：\n0. 必须严格基于提供的搜索结果撰写，不可凭空编造数据和案例。不要在 content 正文中插入"来源一""来源二"等引用标注。\n1. 输出严格 JSON，包含 title、titleAlternatives、lead、content、imageSuggestions、reviewReminders、references 七个字段\n2. title：一个让人想点进去看的标题，不低俗不标题党，但要抓人眼球\n3. titleAlternatives：3个备选标题的数组，每个标题各具风格（如一个偏严肃、一个偏接地气、一个偏提问式），供编辑最终选用\n4. lead：适合手机端阅读的短导语（2-3句话），点出核心安全问题和阅读价值，吸引读者往下看，不超过80字\n5. content：正文，用 HTML 片段格式输出。必须达到 800-1500 字。结构要求：\n   - 开头：用真实案例/数据/场景切入（2-3段），让读者感觉这事跟自己有关\n   - 正文：至少 4-5 个小节（用 h3 标签），每节 150-300 字。结构是「问题是什么 → 为什么危险 → 怎么做才对 → 做完这一步下一步该做什么」，把安全提醒变成可操作的具体步骤\n   - 结尾：落到行动，告诉读者「现在就去检查XX」「今天下班前做XX」，不要喊口号\n   - 不要只写\"注意安全\"\"加强管理\"，要写具体的操作指引\n6. imageSuggestions：配图建议数组（3-5条，每条是具体场景描述而非英文关键词，如\"矿工班前会现场照片，展现酒精检测环节\"\"防汛巡查人员在矿井口检查排水设施\"\"高温作业现场发放防暑降温物资\"）\n7. reviewReminders：发布前审核提醒数组（2-4条，如\"涉及领导行程不写具体预测\"\"涉及事故不夸大不猎奇\"\"涉及统计数据需二次核实原始来源\"\"涉及具体企业名称需确认是否可公开\"）\n8. references：参考来源数组（每条含 source 和 url 两个字段，仅用于侧栏展示供编辑核对出处，不要在 content 正文中插入来源标注）\n9. 不要出现\u201C开头三句话\u201D\u201C标题风格\u201D\u201C智能拆解\u201D\u201C为什么这样写\u201D等元信息\n10. 宣传口径要稳妥，党政/重大纪念日/灾害/健康都要正面宣传\n11. 不编造领导行程、未确认会议、未给出的数据\n12. 健康类只做科普提醒，不做诊断治疗建议\n13. 语言要接地气，像老师傅跟工友聊天，不要官八股\\n14. 这是供人工审核后使用的图文草稿，不可直接发布`;
         var jsonFormat = "\n\nJSON 格式：\n{\"title\":\"文章标题\",\"titleAlternatives\":[\"备选标题1\",\"备选标题2\",\"备选标题3\"],\"lead\":\"适合手机阅读的短导语，2-3句话\",\"content\":\"<p>开头勾人段落</p><h3>小标题</h3><p>正文段落</p><p>结尾段落</p>\",\"imageSuggestions\":[\"矿工班前会现场照片\",\"防汛巡查现场图\",\"高温作业防暑实拍\"],\"reviewReminders\":[\"审核提醒1\",\"审核提醒2\",\"审核提醒3\"],\"references\":[{\"source\":\"来源名称\",\"url\":\"https://来源链接\"}]}";
         if (!searchResults || !searchResults.length) return base + jsonFormat;
         var formattedResults = searchResults.map(function(r, i) {
@@ -2663,6 +2846,183 @@ function fetchArticleContent(item) {
         bar.setAttribute("hidden", "");
       }
 
+      // ===== 历史稿件存取 =====
+      var _historyCache = null;
+
+      // 从 Gist Raw 加载历史稿件
+      function loadHistory() {
+        return fetch(window.GIST_RAW + "?t=" + Date.now())
+          .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+          .then(function(data) {
+            _historyCache = (data && data.articles) ? data.articles : [];
+            return _historyCache;
+          })
+          .catch(function(e) {
+            console.warn("[History] load failed:", e.message);
+            return _historyCache || [];
+          });
+      }
+
+      // 保存稿件到 Gist（前端直连 GitHub API）
+      function saveDraft(article) {
+        var token = window.GIST_TOKEN;
+        if (!token) { showToast("请先在 API 设置里填写 GitHub Token"); return Promise.reject("no token"); }
+        var apiUrl = "https://api.github.com/gists/" + window.GIST_ID;
+        var headers = {
+          "Authorization": "Bearer " + token,
+          "Accept": "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
+        };
+        // 1. 先读取现有 drafts.json
+        return fetch(apiUrl, { headers: headers }).then(function(r) {
+          if (!r.ok) throw new Error("Gist read failed: " + r.status);
+          return r.json();
+        }).then(function(gist) {
+          var files = gist.files || {};
+          var existing = files["drafts.json"];
+          var data = { version: 1, articles: [], updatedAt: "" };
+          if (existing && existing.content) {
+            try { data = JSON.parse(existing.content); } catch(e) {}
+          }
+          // 2. 追加新文章
+          data.articles.push(article);
+          data.updatedAt = new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" });
+          // 3. 写回 Gist
+          return fetch(apiUrl, {
+            method: "PATCH",
+            headers: headers,
+            body: JSON.stringify({
+              files: { "drafts.json": { content: JSON.stringify(data, null, 2) } }
+            })
+          });
+        }).then(function(r) {
+          if (!r.ok) throw new Error("Gist write failed: " + r.status);
+          return r.json();
+        });
+      }
+
+      // 收集当前页面稿件内容
+      function collectDraft() {
+        var title = document.getElementById("topicInput").value.trim();
+        var mainTitle = document.getElementById("resultMainTitle").textContent.trim();
+        var titles = [];
+        var titleItems = document.querySelectorAll("#titleList li");
+        for (var i = 0; i < titleItems.length; i++) titles.push(titleItems[i].textContent.trim());
+        var lead = document.getElementById("leadText").textContent.trim();
+        var body = document.getElementById("articleBody").innerText.trim();
+        var images = [];
+        var imageItems = document.querySelectorAll("#imagePlan li");
+        for (var j = 0; j < imageItems.length; j++) images.push(imageItems[j].textContent.trim());
+        var sources = [];
+        var sourceItems = document.querySelectorAll("#sourceList li");
+        for (var k = 0; k < sourceItems.length; k++) sources.push(sourceItems[k].textContent.trim());
+
+        return {
+          topic: title || mainTitle,
+          mainTitle: mainTitle,
+          titles: titles,
+          lead: lead,
+          body: body,
+          images: images,
+          sources: sources,
+          savedAt: new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })
+        };
+      }
+
+      // 保存按钮事件
+      var _saveBtnBound = false;
+      function bindSaveHistory() {
+        if (_saveBtnBound) return;
+        var btn = document.getElementById("saveHistoryBtn");
+        if (!btn) return;
+        btn.addEventListener("click", function() {
+          var article = collectDraft();
+          if (!article.body && !article.lead) { showToast("当前没有稿件内容"); return; }
+          btn.disabled = true;
+          btn.textContent = "保存中...";
+          saveDraft(article).then(function() {
+            showToast("已保存到历史");
+            btn.textContent = "保存到历史";
+            btn.disabled = false;
+            _historyCache = null;
+            renderHistory();
+          }).catch(function(e) {
+            showToast("保存失败: " + (e.message || "网络错误"));
+            btn.textContent = "保存到历史";
+            btn.disabled = false;
+          });
+        });
+        _saveBtnBound = true;
+      }
+
+      // 渲染历史列表
+      function renderHistory() {
+        loadHistory().then(function(articles) {
+          var list = document.getElementById("historyList");
+          if (!list) return;
+          if (!articles || articles.length === 0) {
+            list.innerHTML = '<div class="history-empty">暂无历史稿件，生成文章后点击「保存到历史」即可存档</div>';
+            return;
+          }
+
+          var searchTerm = (document.getElementById("historySearch").value || "").toLowerCase();
+          var filtered = articles;
+          if (searchTerm) {
+            filtered = articles.filter(function(a) {
+              var haystack = (a.topic + " " + a.mainTitle + " " + a.lead + " " + a.body).toLowerCase();
+              return haystack.indexOf(searchTerm) !== -1;
+            });
+          }
+
+          if (filtered.length === 0) {
+            list.innerHTML = '<div class="history-empty">无匹配的稿件</div>';
+            return;
+          }
+
+          var html = "";
+          for (var i = filtered.length - 1; i >= 0; i--) {
+            var a = filtered[i];
+            var idx = articles.indexOf(a);
+            html += '<div class="history-card" data-idx="' + idx + '">';
+            html += '<p class="hc-title">' + escapeHtml(a.mainTitle || a.topic || "(无标题)") + '</p>';
+            html += '<p class="hc-meta"><span>' + escapeHtml(a.savedAt || "") + '</span><span>' + (a.body ? a.body.length : 0) + ' 字</span></p>';
+            html += '<div class="hc-actions">';
+            html += '<button class="hc-action-btn hc-reuse-btn">复用到话题框</button>';
+            html += '</div>';
+            html += '</div>';
+          }
+          list.innerHTML = html;
+
+          // 绑定复用按钮
+          var cards = list.querySelectorAll(".history-card");
+          for (var j = 0; j < cards.length; j++) {
+            cards[j].addEventListener("click", function(e) {
+              if (e.target.classList.contains("hc-reuse-btn")) {
+                var idx = parseInt(this.getAttribute("data-idx"), 10);
+                if (!isNaN(idx) && articles[idx]) {
+                  var a = articles[idx];
+                  document.getElementById("topicInput").value = "参考以下历史稿件风格，写一篇关于" + (a.topic || a.mainTitle) + "的安全园地文章";
+                  document.getElementById("topicInput").focus();
+                  // 滚动到话题输入框
+                  document.getElementById("topicInput").scrollIntoView({ behavior: "smooth" });
+                  showToast("已填入话题框");
+                }
+              }
+            });
+          }
+        });
+      }
+
+      // 初始化历史模块
+      function initHistory() {
+        bindSaveHistory();
+        var refreshBtn = document.getElementById("refreshHistoryBtn");
+        if (refreshBtn) refreshBtn.addEventListener("click", renderHistory);
+        var searchInput = document.getElementById("historySearch");
+        if (searchInput) searchInput.addEventListener("input", function() { _historyCache = null; renderHistory(); });
+        // 延迟初始加载
+        setTimeout(renderHistory, 500);
+      }
 
       // ===== DIAGNOSTICS =====
       (function(){
@@ -2683,8 +3043,8 @@ function fetchArticleContent(item) {
           if(window.__initDone) {
             db.style.background = "#161";
             log("init OK ✓");
-            // 3秒后隐藏
-            setTimeout(function(){ db.style.display="none"; }, 3000);
+            // 快速隐藏，避免用户误以为页面卡在 loading
+            setTimeout(function(){ db.style.display="none"; }, 500);
           } else {
             err("init NOT done after 1s!");
           }

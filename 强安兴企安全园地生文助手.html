@@ -1540,13 +1540,11 @@ function gd(key, fallback) {
           seen[t] = true;
           deduped.push(list[i]);
         }
-        /* 新增的置顶 → 再按质量分降序 */
+        /* 新增的置顶 → 再按发布日期降序（最新在前） */
         deduped.sort(function(a, b) {
           var na = a.isNew ? 1 : 0;
           var nb = b.isNew ? 1 : 0;
           if (na !== nb) return nb - na;
-          var sd = (b.score || 0) - (a.score || 0);
-          if (sd !== 0) return sd;
           return (b.publishedAt || "").localeCompare(a.publishedAt || "");
         });
         return deduped.slice(0, MAX_MATERIALS);
@@ -1820,7 +1818,7 @@ function fetchArticleContent(item) {
         var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json";
 
         /* 数据源版本标记：源切换后自动清旧缓存 */
-        var DS_VERSION = "gist-v4";
+        var DS_VERSION = "gist-v5";
         var oldVer = localStorage.getItem("mat_datasource_version");
         if (oldVer !== DS_VERSION) {
           localStorage.removeItem(MATERIALS_LS_KEY);
