@@ -4,6 +4,58 @@
 
 ---
 
+## 2026-07-25 — v5.3 SEO 元数据优化（meta description + JSON-LD + 缓存策略）
+
+### 三项 SEO 元数据注入
+- **meta description**：在 `<meta name="viewport">` 后添加 135 字中文描述元标签，用于搜索引擎摘要展示
+- **JSON-LD 结构化数据**：在 `</head>` 前插入 `WebApplication` 类型结构化数据（含名称、描述、免费声明），用于 Google 富结果展示
+- **GitHub Pages 缓存策略注释**：在 `<!doctype html>` 前添加缓存策略说明注释块（10 分钟 max-age + CDN 建议）
+- **影响范围**：强安兴企安全园地生文助手.html（主文件 + 手机演示包）
+
+---
+
+## 2026-07-25 — 150条滚动积累 + 绿色「新增」标记 + normalizeAndCapMaterials 封死漏网口
+
+### 本地素材库从 30 条硬砍改为 150 条滚动积累
+- **问题**：30 条上限一刀切，Google News 每天增量小但长期积累下来老素材会陆续被砍，本地库始终偏浅
+- **修复**：`MAX_LOCAL_STORED` 从 30 放宽到 150；`normalizeAndCapMaterials` 改为"新增优先 + 质量分降序"滚动淘汰
+- **影响范围**：三个 HTML 的 `normalizeAndCapMaterials` / `mergeLocalMaterials`
+
+### 绿色「新增」badge 标记
+- **问题**：无法区分当天新入库素材和历史素材
+- **修复**：渲染时给当天日期入库的素材加绿色「新增」badge 并强制置顶，隔天自动消失
+- **影响范围**：安全园地素材面板 UI
+
+### normalizeAndCapMaterials 统一入口封死漏网口
+- **问题**：Codex 审查发现两处路径绕过了 `normalizeAndCapMaterials` — 页面加载读缓存、导入素材合并
+- **修复**：全部路径改用 `normalizeAndCapMaterials` 统一入口
+- **影响范围**：三个 HTML 的所有素材入库路径
+
+---
+
+## 2026-07-23 — 排序修正 + 30条上限补全 + 手动输入去污染
+
+### 排序从日期改为质量分降序
+- **问题**：素材合并排序按发布日期降序，当天新闻日期相同 → 排序≈随机，无质量偏好
+- **修复**：`scrape-safety-news.js` + 三个 HTML 的合并排序全改为质量分降序，同分按日期降序
+- **影响范围**：采集管线 + 前端素材面板
+
+### 30 条上限补全（修正 7/22 虚假修复）
+- **问题**：7/22 仅在采集脚本设了 `MAX_TOTAL_STORED=30`，前端 HTML "获取安全素材" 的 `oldMats.concat(freshItems)` 无任何截断 → 点一次按钮就永久累积
+- **修复**：三个 HTML 均新增 `MAX_LOCAL_STORED = 30` + `materials.slice(0, 30)`
+- **影响范围**：强安兴企安全园地生文助手.html、手机演示包、生文助手.html
+
+### 手动输入标题不再注入当月安全关键词
+- **问题**：`searchBocha` 调用时强制注入当月安全选题关键词（如 7 月强注"防汛"），手动输入的自定义标题也被污染
+- **修复**：`searchBocha(topic, injectCalendar)` 新增参数，手动输入传 `false`，素材生成保留 `true`
+- **影响范围**：生成文章搜索链路
+
+### 附带清理
+- 确认「安全园地_云端方案」仓库已删，旧 Python 每日 4 次 Gist 覆写隐患消除
+- 缓存版本：线上 `MATERIALS_CACHE_VERSION` 1→2，本地 `DS_VERSION` gist-v3→gist-v4
+
+---
+
 ## 2026-07-22 — 采集与前端修复摘要
 
 - **采集脚本**：新增 `SAFETY_WHITELIST` 64 词安全白名单 + `isSafetyRelated()` 前置过滤；`MAX_TOTAL_STORED` 100 → 30；评分阈值 40 → 65；惩罚词 17 → 31

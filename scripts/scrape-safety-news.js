@@ -518,9 +518,13 @@ async function main() {
 
   console.log(`\n[合并] 新增 ${freshItems.length} 条，已有 ${existing.length} 条`);
 
-  // 9. 合并 + 按发布时间降序
+  // 9. 合并 + 按质量分降序（同分按日期降序）
   const merged = [...freshItems, ...existing];
-  merged.sort((a, b) => (b.publishedAt || "").localeCompare(a.publishedAt || ""));
+  merged.sort((a, b) => {
+    const scoreDiff = (b.score || 0) - (a.score || 0);
+    if (scoreDiff !== 0) return scoreDiff;
+    return (b.publishedAt || "").localeCompare(a.publishedAt || "");
+  });
   const final = merged.slice(0, MAX_TOTAL_STORED);
 
   // 10. 推送 Gist
