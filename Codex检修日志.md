@@ -1,4 +1,13 @@
 
+## 2026/7/25 v5.4 性能+无障碍优化
+
+- **defer 外部脚本**：`extensions/hooks.js` 和 `extensions/config.js` 标签添加 `defer` 属性，解决同步加载阻塞首屏渲染（PageSpeed Insights 渲染阻塞请求 560ms）
+- **ARIA 无障碍修复**：`tablist` 容器添加 `aria-label`；`renderTabs()` 中每个 tab 按钮添加 `role="tab"` + `aria-selected` 属性，与 CSS `.active` 类同步
+- **内联 JS 空白压缩**：body 中 `<script>` 段压缩连续空行（≥3 行合并为 2 行）、清除行尾多余空格，函数逻辑和注释完整保留
+- **影响范围**：三个 HTML（生文助手.html、强安兴企安全园地生文助手.html、手机演示包/强安兴企安全园地生文助手.html）
+
+---
+
 ## 2026/7/25 检修
 
 - **30→150 上限 + 滚动淘汰**：本地素材库从 30 条硬砍改为 150 条滚动积累，超上限按"新增优先 + 质量分降序"挤掉末尾

@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-07-25 — v5.4 性能+无障碍优化（defer + ARIA + JS 压缩）
+
+### 渲染阻塞请求修复
+- **问题**：PageSpeed Insights 检测外部脚本 `hooks.js` 和 `config.js` 同步加载，阻塞首屏渲染约 560ms
+- **修复**：两个脚本标签添加 `defer` 属性，改为 HTML 解析完成后执行（保持执行顺序不变）；html2canvas CDN 已有 `async`，无需改动
+- **影响范围**：三个 HTML（主文件 + 完整版 + 手机演示包）
+
+### ARIA 无障碍修复
+- **问题**：无障碍审计报告 `tablist` 容器缺少标签、tab 按钮缺少 `role="tab"` 和 `aria-selected` 属性
+- **修复**：`tablist` 容器添加 `aria-label="素材分类"`；`renderTabs()` 中每个 `<button>` 动态添加 `role="tab"` + `aria-selected="true|false"`，与 CSS `.active` 类保持同步
+- **影响范围**：三个 HTML 的素材面板 tab 切换组件
+
+### 内联 JS 空白压缩
+- **问题**：内联 `<script>` 代码块含大量连续空行和行尾空格，增加约 5 KiB 体积
+- **修复**：连续 3 个及以上空行合并为最多 2 行，清除所有行尾多余空格；函数逻辑和注释完整保留
+- **影响范围**：三个 HTML 的 body 内 `<script>` 段
+
+### 备注
+- "减少未使用的 JavaScript"一项无需改动：三个文件均使用内联 CSS + JS，未加载大型第三方库，外部依赖仅有 html2canvas（已 async + 错误回退）和两个小型扩展脚本
+
+---
+
 ## 2026-07-25 — v5.3 SEO 元数据优化（meta description + JSON-LD + 缓存策略）
 
 ### 三项 SEO 元数据注入
