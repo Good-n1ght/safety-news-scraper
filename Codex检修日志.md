@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_cdf5bf8e87da11f1b66e525400e6dd8f
+    ReservedCode1: X3fDQz5j7yUHc+7doKy/dQQ5Plz/7xvwzLFrTl4+2DpR8zEKyO7dGBqKuGCA0x5qUmiz13z3rVXL2bKfz881u/dmnRiostYlgVH+gb9UkYamVIDAF+eodjdtfQTljHraTmv6XAWHNM0Xqu5sDCjPxNlSABAFkKL1DTM1IrhNMlemlrbUKvjuPvVSyFY=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_cdf5bf8e87da11f1b66e525400e6dd8f
+    ReservedCode2: X3fDQz5j7yUHc+7doKy/dQQ5Plz/7xvwzLFrTl4+2DpR8zEKyO7dGBqKuGCA0x5qUmiz13z3rVXL2bKfz881u/dmnRiostYlgVH+gb9UkYamVIDAF+eodjdtfQTljHraTmv6XAWHNM0Xqu5sDCjPxNlSABAFkKL1DTM1IrhNMlemlrbUKvjuPvVSyFY=
+---
+
 
 ## 2026/7/25 v5.4 性能+无障碍优化
 
@@ -132,3 +143,4 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 - **修复**：`localStorage.removeItem("materials_cache")` → `localStorage.removeItem(MATERIALS_LS_KEY)`；DS_VERSION 从 `"gist-v1"` 升级到 `"gist-v2"` 强制重新触发清空
 - **影响范围**：强安兴企安全园地生文助手.html — fetchTodayMaterials() 数据源版本检测块
 - **Commit**: `989ad9a`
+*（内容由AI生成，仅供参考）*
