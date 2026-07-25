@@ -1871,8 +1871,10 @@ function fetchArticleContent(item) {
             var existingTitles = {};
             oldMats.forEach(function(om) { existingTitles[om.title] = true; });
             var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
-            /* 标记今天新增 */
-            freshItems.forEach(function(fi) { fi.isNew = true; fi.addedAt = todayStr; });
+            /* 标记今天新增：仅增量获取时标记，缓存清空/首次加载时不标 */
+            if (oldMats.length > 0) {
+              freshItems.forEach(function(fi) { fi.isNew = true; fi.addedAt = todayStr; });
+            }
             materials = normalizeAndCapMaterials(oldMats.concat(freshItems));
             /* 统计新素材实际存活数（归一化后仍在列表中的） */
             var survivedNew = 0;

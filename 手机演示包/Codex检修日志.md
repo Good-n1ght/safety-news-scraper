@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a98a224187de11f1a68c525400826444
+    ReservedCode1: 8XFRtlQdpfM4Nf56Iir8DSgdTuAHlkDhaxwIkRe4iIuomUQgT8mSek3gc05BU8r9A9Y3VTGaBornqFStfRWQum3TygIRqvkiF3tiBEoQk04R3S6w65GYnqn0hsB1/g3+ofgc9Rvy7LPq3UF0vJNn6KUBxk30fcIN4thI1sea/Y2NUPs6yP51CQmGBbM=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_a98a224187de11f1a68c525400826444
+    ReservedCode2: 8XFRtlQdpfM4Nf56Iir8DSgdTuAHlkDhaxwIkRe4iIuomUQgT8mSek3gc05BU8r9A9Y3VTGaBornqFStfRWQum3TygIRqvkiF3tiBEoQk04R3S6w65GYnqn0hsB1/g3+ofgc9Rvy7LPq3UF0vJNn6KUBxk30fcIN4thI1sea/Y2NUPs6yP51CQmGBbM=
+---
+
 ## 2026/7/25 v5.5 排序+缓存+同步修复
 
 - **排序修复**：素材列表排序从「新增置顶 → 质量分降序 → 日期降序」改为「新增置顶 → 日期降序」，非新增素材严格按发布日期从新到旧排列
@@ -140,4 +151,5 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 - **修复**：`localStorage.removeItem("materials_cache")` → `localStorage.removeItem(MATERIALS_LS_KEY)`；DS_VERSION 从 `"gist-v1"` 升级到 `"gist-v2"` 强制重新触发清空
 - **影响范围**：强安兴企安全园地生文助手.html — fetchTodayMaterials() 数据源版本检测块
 - **Commit**: `989ad9a`
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

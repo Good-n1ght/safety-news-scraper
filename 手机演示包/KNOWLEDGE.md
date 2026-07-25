@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_aab01d7c87de11f1a68c525400826444
+    ReservedCode1: BB+88Ppm6GK5RPKA6O0fg+L0ltc+bf8jANNh/40klTfun07O1cN8YNbjSVXwSp49/AIOjXHOQfYUq5VnG88Fr2UDWyvBVPpm5ztL8MDAm9TvLwv/8z5weNq4be7594OEVDtjIsUiie4WeDcN0X83r8W/7sZbKV+oSjehZLmbL/59xrSoKMkoaplyuo8=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_aab01d7c87de11f1a68c525400826444
+    ReservedCode2: BB+88Ppm6GK5RPKA6O0fg+L0ltc+bf8jANNh/40klTfun07O1cN8YNbjSVXwSp49/AIOjXHOQfYUq5VnG88Fr2UDWyvBVPpm5ztL8MDAm9TvLwv/8z5weNq4be7594OEVDtjIsUiie4WeDcN0X83r8W/7sZbKV+oSjehZLmbL/59xrSoKMkoaplyuo8=
+---
+
 # 强安兴企助手 — 架构方案与避坑指南
 
 > 写给未来接手此项目的 AI / 开发者：本文档记录完整架构、踩过的坑、扩展方式，读完即可上手修改或新建同类项目。
@@ -634,4 +645,5 @@ var GENERATION_DEFAULTS = {
 6. **GLM 与其他模型行为差异**：response_format 支持程度、返回 JSON 格式严格度不同，`parseJsonContent` 已做兼容但边缘情况仍可能出错
 7. **extensions/ 目录依赖**：`hooks.js` 和 `config.js` 是运行时必需文件，缺失会导致页面白屏。发布/演示时必须确保该目录完整
 8. **C 盘 source/repos 目录残留**：已废弃但未物理删除，新接手应忽略 C 盘、只关注 F 盘 `强安系列_手机展示/`
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
