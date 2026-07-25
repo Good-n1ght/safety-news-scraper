@@ -1,6 +1,6 @@
 # 强安兴企安全园地生文助手
 
-> v5.x — 博查 API 替代 Bing/SCF 搜索 + getProxy() 废弃 + 项目目录统一至 F 盘
+> v5.x — 博查 API 替代 Bing/SCF 搜索 + getProxy() 废弃 + 项目目录统一至 F 盘 + SEO 优化 + 排序修复 + 缓存优化 + 生文助手在线版
 
 ## 一句话介绍
 
@@ -67,7 +67,7 @@
 | 生文助手 | `强安兴企安全园地生文助手.html` | 联网搜索 + AI 生成安全宣教图文草稿 |
 | 强安视界 | `强安视界_UI改版.html` | 安全新闻聚合阅读器，实时抓取头条/百度/Bing |
 | 产品介绍 | `强安系列产品介绍_汇报页.html` | 产品体系汇报展示页 |
-| GitHub Pages | [good-n1ght.github.io/safety-news-scraper](https://good-n1ght.github.io/safety-news-scraper/) | 强安视界在线版 |
+| GitHub Pages | [good-n1ght.github.io/safety-news-scraper/生文助手.html](https://good-n1ght.github.io/safety-news-scraper/生文助手.html) | 生文助手在线版 |
 
 ## 目录结构
 
@@ -104,3 +104,7 @@
 | v4.1 | 历史稿件保存与复用、手机端响应式布局修复、SCF save-draft 方案（已废弃） |
 | v4.2 | CORS 代理迁移至 cors-proxy-v2（零依赖）、GitHub Token 更新、cors-proxy 废弃 |
 | v5 | 搜索迁移至博查 API（Bocha API，1000 次/月免费）、getProxy() 废弃、fetchArticleContent 直接抓取、CORS 代理全线废弃、项目目录统一至 F 盘、C 盘 source/repos 标记废弃 |
+| v5.3 | SEO 优化：meta description + JSON-LD 结构化数据，PageSpeed 跑分手机 79/桌面 98 |
+| v5.4 | 性能/无障碍优化：defer 外部脚本 + ARIA tablist 标签 + JS 压缩，PageSpeed 最佳做法 100（后因 defer 导致无限 loading 紧急回退） |
+| v5.5 | 排序修复（日期降序替代质量分排序）+ DS_VERSION 升级到 v5 强制刷新缓存 + 生文助手.html 同步为主版本 |
+| v5.5.1 | 修复缓存清空后全部素材误标「新增」badge：仅增量获取时标记 isNew，首次加载不标 |
