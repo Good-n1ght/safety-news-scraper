@@ -4,6 +4,13 @@
 
 ---
 
+## 2026-07-22 — 采集与前端修复摘要
+
+- **采集脚本**：新增 `SAFETY_WHITELIST` 64 词安全白名单 + `isSafetyRelated()` 前置过滤；`MAX_TOTAL_STORED` 100 → 30；评分阈值 40 → 65；惩罚词 17 → 31
+- **前端 HTML**：缓存版本 v1 → v2，数据源版本 v2 → v3；`buildAISystemPrompt()` 去掉来源标注指令，消除正文"来源一""来源二"；修复中文引号导致的 JavaScript 语法错误
+
+---
+
 ## 2026-07-22 — Marvis 检修（采集管道 v2.3 质量强化 & 前端修复）
 
 ### 采集脚本 scrape-safety-news.js：安全白名单 + 双阈值 + 总量控制
