@@ -30,6 +30,15 @@ AIGC:
 
 ---
 
+## 2026/7/25 v5.5.1 「新增」badge 误标修复
+
+- **问题**：DS_VERSION 从 gist-v4 升级到 gist-v5 后缓存清空，`normalizeAndCapMaterials` 在处理全新数据时误判所有素材为「新增」，导致全部 30 条素材被标绿色「新增」badge
+- **根因**：isNew 标记逻辑未区分"增量获取"与"首次加载/缓存重建"两种场景。缓存清空后 oldMats.length === 0，freshItems 中的当天入库素材全部被标为 isNew=true
+- **修复**：仅增量获取时标记 isNew — `oldMats.length > 0` 时才比较 freshItems 中每条素材是否在旧库中不存在；首次加载或缓存重建时不标任何「新增」badge
+- **影响范围**：三个 HTML 的 `mergeLocalMaterials` / `normalizeAndCapMaterials` 中 isNew 标记逻辑
+
+---
+
 ## 2026/7/25 v5.4 性能+无障碍优化
 
 - **defer 外部脚本**：`extensions/hooks.js` 和 `extensions/config.js` 标签添加 `defer` 属性，解决同步加载阻塞首屏渲染（PageSpeed Insights 渲染阻塞请求 560ms）

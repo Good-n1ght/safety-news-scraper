@@ -2,11 +2,22 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_aa16cadc87de11f1b66e525400e6dd8f
-    ReservedCode1: 4tuLnTYuMnDeRTYxWk8KEFw3b02PaybR5tw+7OcjH/c1LWtLhFMFpj5vD3qedgZk5fIlq3tgpmWtUTyBxUkVhxS9CuHRvGDUfwkRIXsiV8/W7WdTbVnJ/uSDXDc1ZIGfxZZIQgzNMVviYaP12wLWWJobhzrECVyDl006hc3xeRJpcu9dpxczHJgBLEc=
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a7d8ae9e87de11f1a68c525400826444
+    ReservedCode1: MdXRpbU0nIOy5S3Vg49Nuf9mXecI9fRndAGr7n4qWBhpoocmp/K49cw0mBqUBXgG0P5Rd6u7I8vb8aQgEd7X8slzsKLAHh3tydL50tJmQZ9oTxr14x+XGbI4QJPIZOF9c5CPhplNlfLvF40fzA3GMbt0mrssa3mKKiVGZ1sRSD5KYECFQmTFbXiHEM0=
     ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_aa16cadc87de11f1b66e525400e6dd8f
-    ReservedCode2: 4tuLnTYuMnDeRTYxWk8KEFw3b02PaybR5tw+7OcjH/c1LWtLhFMFpj5vD3qedgZk5fIlq3tgpmWtUTyBxUkVhxS9CuHRvGDUfwkRIXsiV8/W7WdTbVnJ/uSDXDc1ZIGfxZZIQgzNMVviYaP12wLWWJobhzrECVyDl006hc3xeRJpcu9dpxczHJgBLEc=
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_a7d8ae9e87de11f1a68c525400826444
+    ReservedCode2: MdXRpbU0nIOy5S3Vg49Nuf9mXecI9fRndAGr7n4qWBhpoocmp/K49cw0mBqUBXgG0P5Rd6u7I8vb8aQgEd7X8slzsKLAHh3tydL50tJmQZ9oTxr14x+XGbI4QJPIZOF9c5CPhplNlfLvF40fzA3GMbt0mrssa3mKKiVGZ1sRSD5KYECFQmTFbXiHEM0=
+---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_cea2154687da11f1b66e525400e6dd8f
+    ReservedCode1: 6t7dlUWsd5sYcwoMFSHqR9gyUSA+LdeusXGcAR/ndmb0LMeiKY8wnu19R6dVzj/wzL1QdjcUyHMvhSl0OB/3SOOiQSCvaQ+hyZbZZuaqtPGl9hkyARaSTtJfGWxcYS4JEdU1p5/Q7s3pWclaIAVIEXPVz188/hDFEIVvJrK3nCoC4VP6lreYlm25sN4=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_cea2154687da11f1b66e525400e6dd8f
+    ReservedCode2: 6t7dlUWsd5sYcwoMFSHqR9gyUSA+LdeusXGcAR/ndmb0LMeiKY8wnu19R6dVzj/wzL1QdjcUyHMvhSl0OB/3SOOiQSCvaQ+hyZbZZuaqtPGl9hkyARaSTtJfGWxcYS4JEdU1p5/Q7s3pWclaIAVIEXPVz188/hDFEIVvJrK3nCoC4VP6lreYlm25sN4=
 ---
 
 # 强安系列 — 完整检修日志
@@ -34,6 +45,16 @@ AIGC:
 
 ### 手机演示包同步
 - 手机演示包内四份文档同步至最新版
+
+---
+
+## 2026-07-25 — v5.5.1 「新增」badge 误标修复
+
+### 缓存清空后全部素材误标「新增」badge
+- **问题**：DS_VERSION 升级到 gist-v5 后缓存清空，全部 30 条素材在素材面板被标绿色「新增」badge，造成"全部都是新素材"的假象
+- **根因**：isNew 标记逻辑未区分场景——oldMats.length === 0 时（缓存清空/首次加载），freshItems 中的当天入库素材全被误判为 isNew=true
+- **修复**：isNew 标记仅在增量获取时生效（`oldMats.length > 0`），首次加载或缓存重建时一律不标「新增」badge
+- **影响范围**：三个 HTML 的 mergeLocalMaterials / normalizeAndCapMaterials 中 isNew 标记逻辑
 
 ---
 

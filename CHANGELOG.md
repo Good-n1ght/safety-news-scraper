@@ -48,6 +48,16 @@ AIGC:
 
 ---
 
+## 2026-07-25 — v5.5.1 「新增」badge 误标修复
+
+### 缓存清空后全部素材误标「新增」badge
+- **问题**：DS_VERSION 升级到 gist-v5 后缓存清空，全部 30 条素材在素材面板被标绿色「新增」badge，造成"全部都是新素材"的假象
+- **根因**：isNew 标记逻辑未区分场景——oldMats.length === 0 时（缓存清空/首次加载），freshItems 中的当天入库素材全被误判为 isNew=true
+- **修复**：isNew 标记仅在增量获取时生效（`oldMats.length > 0`），首次加载或缓存重建时一律不标「新增」badge
+- **影响范围**：三个 HTML 的 mergeLocalMaterials / normalizeAndCapMaterials 中 isNew 标记逻辑
+
+---
+
 ## 2026-07-25 — v5.4 性能+无障碍优化（defer + ARIA + JS 压缩）
 
 ### 渲染阻塞请求修复

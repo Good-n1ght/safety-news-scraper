@@ -2,12 +2,24 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a98a224187de11f1a68c525400826444
-    ReservedCode1: 8XFRtlQdpfM4Nf56Iir8DSgdTuAHlkDhaxwIkRe4iIuomUQgT8mSek3gc05BU8r9A9Y3VTGaBornqFStfRWQum3TygIRqvkiF3tiBEoQk04R3S6w65GYnqn0hsB1/g3+ofgc9Rvy7LPq3UF0vJNn6KUBxk30fcIN4thI1sea/Y2NUPs6yP51CQmGBbM=
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a74af35687de11f1b66e525400e6dd8f
+    ReservedCode1: u08dIoRDFFrsZDd5n+Ff5RaDX7owe9Lz1o+lJT1zY1wbHYZBCPhL8AeCugUHgF2HQz1rkzfpIMh++Gr7bEqL5Mf0vGG8ZKgVf8Q/afhvymT5yHguu1rgtOxbOOBnAgmLz+Xk8obWBoWabLVSBE+mwbsg89BSYBFt4uiN+XB9Mi46P4p1+f3ri+EaSdw=
     ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_a98a224187de11f1a68c525400826444
-    ReservedCode2: 8XFRtlQdpfM4Nf56Iir8DSgdTuAHlkDhaxwIkRe4iIuomUQgT8mSek3gc05BU8r9A9Y3VTGaBornqFStfRWQum3TygIRqvkiF3tiBEoQk04R3S6w65GYnqn0hsB1/g3+ofgc9Rvy7LPq3UF0vJNn6KUBxk30fcIN4thI1sea/Y2NUPs6yP51CQmGBbM=
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_a74af35687de11f1b66e525400e6dd8f
+    ReservedCode2: u08dIoRDFFrsZDd5n+Ff5RaDX7owe9Lz1o+lJT1zY1wbHYZBCPhL8AeCugUHgF2HQz1rkzfpIMh++Gr7bEqL5Mf0vGG8ZKgVf8Q/afhvymT5yHguu1rgtOxbOOBnAgmLz+Xk8obWBoWabLVSBE+mwbsg89BSYBFt4uiN+XB9Mi46P4p1+f3ri+EaSdw=
 ---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_cdf5bf8e87da11f1b66e525400e6dd8f
+    ReservedCode1: X3fDQz5j7yUHc+7doKy/dQQ5Plz/7xvwzLFrTl4+2DpR8zEKyO7dGBqKuGCA0x5qUmiz13z3rVXL2bKfz881u/dmnRiostYlgVH+gb9UkYamVIDAF+eodjdtfQTljHraTmv6XAWHNM0Xqu5sDCjPxNlSABAFkKL1DTM1IrhNMlemlrbUKvjuPvVSyFY=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_cdf5bf8e87da11f1b66e525400e6dd8f
+    ReservedCode2: X3fDQz5j7yUHc+7doKy/dQQ5Plz/7xvwzLFrTl4+2DpR8zEKyO7dGBqKuGCA0x5qUmiz13z3rVXL2bKfz881u/dmnRiostYlgVH+gb9UkYamVIDAF+eodjdtfQTljHraTmv6XAWHNM0Xqu5sDCjPxNlSABAFkKL1DTM1IrhNMlemlrbUKvjuPvVSyFY=
+---
+
 
 ## 2026/7/25 v5.5 排序+缓存+同步修复
 
@@ -15,6 +27,15 @@ AIGC:
 - **缓存刷新**：DS_VERSION 从 gist-v4 升级到 gist-v5，强制清除旧 localStorage 缓存，解决用户看到的是过期素材数据的问题
 - **生文助手.html 同步**：覆盖为与强安兴企安全园地生文助手.html 一致的版本（此前为旧版 v1 缓存逻辑）
 - **手机演示包同步更新**
+
+---
+
+## 2026/7/25 v5.5.1 「新增」badge 误标修复
+
+- **问题**：DS_VERSION 从 gist-v4 升级到 gist-v5 后缓存清空，`normalizeAndCapMaterials` 在处理全新数据时误判所有素材为「新增」，导致全部 30 条素材被标绿色「新增」badge
+- **根因**：isNew 标记逻辑未区分"增量获取"与"首次加载/缓存重建"两种场景。缓存清空后 oldMats.length === 0，freshItems 中的当天入库素材全部被标为 isNew=true
+- **修复**：仅增量获取时标记 isNew — `oldMats.length > 0` 时才比较 freshItems 中每条素材是否在旧库中不存在；首次加载或缓存重建时不标任何「新增」badge
+- **影响范围**：三个 HTML 的 `mergeLocalMaterials` / `normalizeAndCapMaterials` 中 isNew 标记逻辑
 
 ---
 

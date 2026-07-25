@@ -2,18 +2,29 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_aab01d7c87de11f1a68c525400826444
-    ReservedCode1: BB+88Ppm6GK5RPKA6O0fg+L0ltc+bf8jANNh/40klTfun07O1cN8YNbjSVXwSp49/AIOjXHOQfYUq5VnG88Fr2UDWyvBVPpm5ztL8MDAm9TvLwv/8z5weNq4be7594OEVDtjIsUiie4WeDcN0X83r8W/7sZbKV+oSjehZLmbL/59xrSoKMkoaplyuo8=
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a86b3c0d87de11f1b66e525400e6dd8f
+    ReservedCode1: +TRo958GwBRTTdMpYbW7BR9kx3/vdVSQUQdFHq8sFNeOO1Acu62gO5xDzbyPwicVT2x4p6OyLhpZLViPYUhNMes2qHyqabhaMHxtQaEtK0KSmkh+5MssmWc6i0ZrXWbsmC3K2B7IFIjumwBQTSPFoOCQfN26VvcU3hypUsHNLE3ROzbGDZHLu793d0Q=
     ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_aab01d7c87de11f1a68c525400826444
-    ReservedCode2: BB+88Ppm6GK5RPKA6O0fg+L0ltc+bf8jANNh/40klTfun07O1cN8YNbjSVXwSp49/AIOjXHOQfYUq5VnG88Fr2UDWyvBVPpm5ztL8MDAm9TvLwv/8z5weNq4be7594OEVDtjIsUiie4WeDcN0X83r8W/7sZbKV+oSjehZLmbL/59xrSoKMkoaplyuo8=
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_a86b3c0d87de11f1b66e525400e6dd8f
+    ReservedCode2: +TRo958GwBRTTdMpYbW7BR9kx3/vdVSQUQdFHq8sFNeOO1Acu62gO5xDzbyPwicVT2x4p6OyLhpZLViPYUhNMes2qHyqabhaMHxtQaEtK0KSmkh+5MssmWc6i0ZrXWbsmC3K2B7IFIjumwBQTSPFoOCQfN26VvcU3hypUsHNLE3ROzbGDZHLu793d0Q=
+---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_cf456b0087da11f1b66e525400e6dd8f
+    ReservedCode1: sTHGUkczZSe0ASzfTvJyuCiu5LPPeYlFjmnv6GU+YizYMHEalk4N3gOA+Fr5R5CrYND7m1a64H/uy7SJ/5SEdD+rPxKzjfc8Fy+BKoqJ/n3rHry6whX54+sy3ot80VOqACKE1dHeyab+qki9uqFKDLamYheOY7YuCFZScwVQi3uWg5pY17DCkBLmgq0=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_cf456b0087da11f1b66e525400e6dd8f
+    ReservedCode2: sTHGUkczZSe0ASzfTvJyuCiu5LPPeYlFjmnv6GU+YizYMHEalk4N3gOA+Fr5R5CrYND7m1a64H/uy7SJ/5SEdD+rPxKzjfc8Fy+BKoqJ/n3rHry6whX54+sy3ot80VOqACKE1dHeyab+qki9uqFKDLamYheOY7YuCFZScwVQi3uWg5pY17DCkBLmgq0=
 ---
 
 # 强安兴企助手 — 架构方案与避坑指南
 
 > 写给未来接手此项目的 AI / 开发者：本文档记录完整架构、踩过的坑、扩展方式，读完即可上手修改或新建同类项目。
 >
-> 最后更新：2026-07-18（v4 — 选题日历 + 栏目模板）；2026-07-19（v4.1 — 历史稿件 + 手机适配；v4.2 — CORS 代理迁移）；2026-07-20（v5 — 博查 API 替代 Bing/SCF 代理搜索、getProxy() 废弃、项目目录迁移至 F 盘）；2026-07-23（v5.1 — 30条上限补全 + 质量分排序 + 手动输入去关键词污染）；2026-07-25（v5.2 — 150条滚动积累 + 绿色「新增」标记 + normalizeAndCapMaterials 统一入口；v5.3 — SEO 元数据优化：meta description + JSON-LD + 缓存策略注释；v5.4 — 性能+无障碍优化：defer 外部脚本 + ARIA 修复 + 内联 JS 空白压缩；v5.5 — 排序修正：日期降序 + 缓存刷新：gist-v5 + HTML 同步）
+> 最后更新：2026-07-18（v4 — 选题日历 + 栏目模板）；2026-07-19（v4.1 — 历史稿件 + 手机适配；v4.2 — CORS 代理迁移）；2026-07-20（v5 — 博查 API 替代 Bing/SCF 代理搜索、getProxy() 废弃、项目目录迁移至 F 盘）；2026-07-23（v5.1 — 30条上限补全 + 质量分排序 + 手动输入去关键词污染）；2026-07-25（v5.2 — 150条滚动积累 + 绿色「新增」标记 + normalizeAndCapMaterials 统一入口；v5.3 — SEO 元数据优化：meta description + JSON-LD + 缓存策略注释；v5.4 — 性能+无障碍优化：defer 外部脚本 + ARIA 修复 + 内联 JS 空白压缩；v5.5 — 排序修正：日期降序 + 缓存刷新：gist-v5 + HTML 同步；v5.5.1 — isNew 标记修复：仅增量获取时标「新增」，首次加载/缓存重建不标）
 
 ---
 
