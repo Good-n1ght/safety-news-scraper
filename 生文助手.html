@@ -1,8 +1,16 @@
+<!--
+  缓存策略说明：
+  本文件托管于 GitHub Pages，静态资源默认缓存策略由 GitHub 控制。
+  - HTML 文件：Cache-Control: max-age=600（10分钟）
+  - 如需更长的缓存时间，建议配置自定义域名并使用 Cloudflare 等 CDN 服务。
+  - JS/CSS 内联于本文件，随 HTML 一同更新，无需额外缓存配置。
+-->
 <!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="强安兴企安全园地智能图文助手 — 面向国企工会和煤矿安全宣传的一站式AI图文生成工具，支持事故案例分析、班前会要点、安全知识问答等多种栏目模板，自动联网搜索安全素材并生成完整图文草稿。" />
     <title>强安兴企安全园地智能图文助手</title>
 <script async src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" onerror="console.warn('html2canvas CDN failed, export disabled')"></script>
 <!-- 扩展系统 -->
@@ -899,6 +907,20 @@ select:focus {
 }
 
     </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "强安兴企安全园地智能图文助手",
+      "description": "面向国企工会和煤矿安全宣传的一站式AI图文生成工具，支持事故案例分析、班前会要点、安全知识问答等栏目模板，自动联网搜索安全素材并生成完整图文草稿。",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="diagBar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#222;color:#0f0;font:11px monospace;padding:3px 8px;display:block;max-height:60px;overflow-y:auto;">diag: loading...</div>
