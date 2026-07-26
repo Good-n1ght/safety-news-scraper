@@ -535,8 +535,9 @@ async function main() {
   // 9. 增量累积：本轮新增排前面，旧数据补满到 30（不丢旧素材库）
   freshItems.sort((a, b) => (b.score || 0) - (a.score || 0));
   existing.sort((a, b) => (b.score || 0) - (a.score || 0));
-  const remaining = Math.max(0, MAX_TOTAL_STORED - freshItems.length);
-  const final = [...freshItems, ...existing.slice(0, remaining)];
+  const cappedFresh = freshItems.slice(0, MAX_TOTAL_STORED);
+  const remaining = Math.max(0, MAX_TOTAL_STORED - cappedFresh.length);
+  const final = [...cappedFresh, ...existing.slice(0, remaining)];
 
   console.log(`[合并结果] 本轮新增 ${freshItems.length} 条 + 旧数据 ${remaining} 条 = ${final.length} 条`);
 
