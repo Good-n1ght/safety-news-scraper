@@ -2,6 +2,17 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_5161c05c889811f1b66e525400e6dd8f
+    ReservedCode1: T2dpesQlwZRZf7ZvHNdUjBi0BGe6keeWMCvDNr9V7atVwsDfdnw5mviv8eDfrlEAbdb/sC0M54SwC5m6i7ZEayLAS2/AUoUpTq9383HmRVheJJ1oiRasQmDAbpRIFmofXw4bQKxA41Ph+4NpaCIbx6j/MzkYBi8yDCNztPIZEw5bzDbLVSNoaIE6pHg=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_5161c05c889811f1b66e525400e6dd8f
+    ReservedCode2: T2dpesQlwZRZf7ZvHNdUjBi0BGe6keeWMCvDNr9V7atVwsDfdnw5mviv8eDfrlEAbdb/sC0M54SwC5m6i7ZEayLAS2/AUoUpTq9383HmRVheJJ1oiRasQmDAbpRIFmofXw4bQKxA41Ph+4NpaCIbx6j/MzkYBi8yDCNztPIZEw5bzDbLVSNoaIE6pHg=
+---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
     ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a74af35687de11f1b66e525400e6dd8f
     ReservedCode1: u08dIoRDFFrsZDd5n+Ff5RaDX7owe9Lz1o+lJT1zY1wbHYZBCPhL8AeCugUHgF2HQz1rkzfpIMh++Gr7bEqL5Mf0vGG8ZKgVf8Q/afhvymT5yHguu1rgtOxbOOBnAgmLz+Xk8obWBoWabLVSBE+mwbsg89BSYBFt4uiN+XB9Mi46P4p1+f3ri+EaSdw=
     ContentPropagator: 001191440300708461136T1XGW3
@@ -199,5 +210,6 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 - **修复**：`localStorage.removeItem("materials_cache")` → `localStorage.removeItem(MATERIALS_LS_KEY)`；DS_VERSION 从 `"gist-v1"` 升级到 `"gist-v2"` 强制重新触发清空
 - **影响范围**：强安兴企安全园地生文助手.html — fetchTodayMaterials() 数据源版本检测块
 - **Commit**: `989ad9a`
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

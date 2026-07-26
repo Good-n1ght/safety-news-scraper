@@ -2,6 +2,17 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_50ca1a53889811f1a68c525400826444
+    ReservedCode1: +wXzpkkzC8S0y2e8p/tD75jKXUGCHkMji+c9CLzG15T6syLoIxcAoNZJWUwEGgj3S6iWoXV/Mmu7w7PhUrQuvc0jM6FS/upl4i7htZDRuQ2n5jWhg2LwTB0jC+bkxXVYwoqFwbtAx4mYn03/E1usx4Q6TdVyM9mof9uhF1SLMHAnlvEgCaHEGFeU0ek=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_50ca1a53889811f1a68c525400826444
+    ReservedCode2: +wXzpkkzC8S0y2e8p/tD75jKXUGCHkMji+c9CLzG15T6syLoIxcAoNZJWUwEGgj3S6iWoXV/Mmu7w7PhUrQuvc0jM6FS/upl4i7htZDRuQ2n5jWhg2LwTB0jC+bkxXVYwoqFwbtAx4mYn03/E1usx4Q6TdVyM9mof9uhF1SLMHAnlvEgCaHEGFeU0ek=
+---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
     ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a7d8ae9e87de11f1a68c525400826444
     ReservedCode1: MdXRpbU0nIOy5S3Vg49Nuf9mXecI9fRndAGr7n4qWBhpoocmp/K49cw0mBqUBXgG0P5Rd6u7I8vb8aQgEd7X8slzsKLAHh3tydL50tJmQZ9oTxr14x+XGbI4QJPIZOF9c5CPhplNlfLvF40fzA3GMbt0mrssa3mKKiVGZ1sRSD5KYECFQmTFbXiHEM0=
     ContentPropagator: 001191440300708461136T1XGW3
@@ -74,11 +85,12 @@ AIGC:
 - **核心改进**：v5.7 测试表明健康类等内容质量分普遍偏低，≥65 门槛将其过滤在外；下调至 55 让其有机会进入候选池
 - **影响范围**：采集脚本 `scrape-safety-news.js` — `enrichItem` 过滤阶段
 
-### 新数据优先分配 20 个空位
+### 累积模式：新数据优先 + 旧数据补满 30 条
 - **日期**：2026-07-26
 - **操作人**：Marvis
-- **修改内容**：合并逻辑从「新旧混排 → 按分数截断 30」改为「本轮新增单独排序取前 20 条 + 旧数据补满 30」，新增 `MAX_FRESH_SLOTS` 常量（20）
-- **核心改进**：旧版逻辑导致高分旧内容持续挤占新内容配额，每天新增仅 1~5 条且不能保证展示；新版确保新增内容始终占据前 20 位，旧数据只填充剩余空位
+- **修改内容**：合并逻辑从「新旧混排 → 按分数截断 30」改为「本轮新增全部排前面 + 旧数据补满剩余空位至 30」
+- **核心改进**：Gist 作为前端数据源需保持累积，旧版纯增量在无抓取轮次会退化为 0 条；累积模式下始终满 30 条，新数据优先展示
+- **日志输出**：「本轮新增 X 条 + 旧数据 Y 条 = Z 条」，可追踪新旧比例
 - **影响范围**：采集脚本 `scrape-safety-news.js` — 合并截断阶段
 
 ### test 分支白名单阈值 ≥1 测试结论
@@ -584,5 +596,6 @@ AIGC:
 ---
 
 > 最后更新：2026-07-21
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

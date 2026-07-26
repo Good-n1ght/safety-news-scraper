@@ -2,6 +2,17 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_520200b4889811f1b66e525400e6dd8f
+    ReservedCode1: g+C9K9aLqMB/oeFezGslz6QjPNZR5WfBSdsN82G/bL0QdTe6/7o7S+GPAOP1xeq3VVf3imRBU/IThkaUQsU2t8ro3QvVOPc18PUSEmBU7TjMy+Dt483pbwvn5p4GmSrH1PRDd4Npioz8CgWaw2RPyOBqwnyAmwx3UBIWpE2WJ7wvMcEIlrYVWv43xH0=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_520200b4889811f1b66e525400e6dd8f
+    ReservedCode2: g+C9K9aLqMB/oeFezGslz6QjPNZR5WfBSdsN82G/bL0QdTe6/7o7S+GPAOP1xeq3VVf3imRBU/IThkaUQsU2t8ro3QvVOPc18PUSEmBU7TjMy+Dt483pbwvn5p4GmSrH1PRDd4Npioz8CgWaw2RPyOBqwnyAmwx3UBIWpE2WJ7wvMcEIlrYVWv43xH0=
+---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
     ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a86b3c0d87de11f1b66e525400e6dd8f
     ReservedCode1: +TRo958GwBRTTdMpYbW7BR9kx3/vdVSQUQdFHq8sFNeOO1Acu62gO5xDzbyPwicVT2x4p6OyLhpZLViPYUhNMes2qHyqabhaMHxtQaEtK0KSmkh+5MssmWc6i0ZrXWbsmC3K2B7IFIjumwBQTSPFoOCQfN26VvcU3hypUsHNLE3ROzbGDZHLu793d0Q=
     ContentPropagator: 001191440300708461136T1XGW3
@@ -656,5 +667,6 @@ var GENERATION_DEFAULTS = {
 6. **GLM 与其他模型行为差异**：response_format 支持程度、返回 JSON 格式严格度不同，`parseJsonContent` 已做兼容但边缘情况仍可能出错
 7. **extensions/ 目录依赖**：`hooks.js` 和 `config.js` 是运行时必需文件，缺失会导致页面白屏。发布/演示时必须确保该目录完整
 8. **C 盘 source/repos 目录残留**：已废弃但未物理删除，新接手应忽略 C 盘、只关注 F 盘 `强安系列_手机展示/`
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

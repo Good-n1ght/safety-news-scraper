@@ -1,4 +1,4 @@
-/**
+﻿/**
  * scrape-safety-news.js — 安全园地素材自动采集管道 v2
  * 
  * 三层数据源:
@@ -37,7 +37,6 @@ const FETCH_TIMEOUT_MS = 12000;
 const MAX_CONTENT_CHARS = 6000;
 const MAX_STORED_CHARS = 500;
 const MIN_DAILY_TARGET = 5; // 每日最少素材数，不足时从 fallback 补充
-const MIN_SCORE = 55; // 评分过滤阈值（v5.8: 65→55，拓宽覆盖面）
 
 // ========== 第一层：Google News RSS 关键词 ==========
 const GOOGLE_NEWS_KEYWORDS = [
@@ -149,7 +148,7 @@ function isSafetyRelated(title, summary) {
       remaining = remaining.substring(0, idx) + " ".repeat(kw.length) + remaining.substring(idx + kw.length);
     }
   }
-  return count >= 2;
+  return count >= 1;
 }
 
 function hasPenaltyKeywords(text) {
@@ -485,14 +484,14 @@ async function main() {
   }
 
   // 6. 打分 + 分类 + 过滤
-  const enriched = uniqueResults.map(enrichItem).filter((item) => item.score >= MIN_SCORE);
+  const enriched = uniqueResults.map(enrichItem).filter((item) => item.score >= 65);
   enriched.sort((a, b) => (b.score || 0) - (a.score || 0));
-  console.log(`[打分过滤后] ${enriched.length} 条 (≥${MIN_SCORE}分)`);
+  console.log(`[打分过滤后] ${enriched.length} 条 (≥65分)`);
 
   // 分数分布
   const dist = {};
   enriched.forEach((i) => {
-    const band = i.score >= 80 ? "80+优先" : `${MIN_SCORE}-79正常`;
+    const band = i.score >= 80 ? "80+优先" : "65-79正常";
     dist[band] = (dist[band] || 0) + 1;
   });
   console.log(`分数分布: ${JSON.stringify(dist)}`);
@@ -530,19 +529,27 @@ async function main() {
   const existingTitles = new Set(existing.map((e) => normalizeTitle(e.title)));
   const freshItems = enriched.filter((item) => !existingTitles.has(normalizeTitle(item.title)));
 
-  console.log(`\n[合并] 本轮新增 ${freshItems.length} 条，已有 ${existing.length} 条`);
+  console.log(`\n[合并] 新增 ${freshItems.length} 条，已有 ${existing.length} 条`);
 
-  // 9. 合并：本轮新增排前面（≤MAX_TOTAL_STORED），旧数据补满剩余空位
-  const topFresh = freshItems.slice(0, MAX_TOTAL_STORED);
-  const remaining = MAX_TOTAL_STORED - topFresh.length;
-  const toKeep = existing.slice(0, remaining);
-  const merged = [...topFresh, ...toKeep];
-  console.log(`[合并后] 新增 ${topFresh.length} 条 + 旧数据 ${toKeep.length} 条 = ${merged.length} 条`);
-  // 保持新鲜度优先，不再按质量分重排
+  // 9. 合并 + 按质量分降序（同分按日期降序）
+  const merged = [...freshItems, ...existing];
+  merged.sort((a, b) => {
+    const scoreDiff = (b.score || 0) - (a.score || 0);
+    if (scoreDiff !== 0) return scoreDiff;
+    return (b.publishedAt || "").localeCompare(a.publishedAt || "");
+  });
   const final = merged.slice(0, MAX_TOTAL_STORED);
 
-  // 10. 推送 Gist
-  await updateGist(token, final);
+  // 10. 推送 Gist（测试模式：注释掉，改为写入本地文件）
+  // await updateGist(token, final);
+  const fsSync = await import("fs");
+  const __testDir = new URL(".", import.meta.url).pathname;
+  fsSync.writeFileSync(
+    __testDir + "test_result.json",
+    JSON.stringify({ items: final, updatedAt: new Date().toISOString() }, null, 2),
+    "utf-8"
+  );
+  console.log("[测试] 结果已写入 test_result.json");
 
   // 11. 输出摘要
   console.log(`\n=== 执行摘要 ===`);
