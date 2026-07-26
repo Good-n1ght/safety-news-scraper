@@ -220,7 +220,7 @@
   <ul class="feature-list">
     <li><span class="feature-bullet"></span><span class="feature-label">实时联网搜索</span><span class="feature-value">不再依赖预置素材——每次按下生成按钮，实时去应急管理部、矿山安监局、煤炭报、煤矿安全网、安全文化网、煤炭资讯网、国家卫健委 7 站抓取当日最新文章。结果标注来源链接，可溯源可核实</span></li>
     <li><span class="feature-bullet"></span><span class="feature-label">AI 自动生成完整稿件</span><span class="feature-value">基于搜索到的真实资料，生成 800-1500 字结构化正文（4-5 个小节 + 操作指引），含标题、封面描述、配图关键词、审核提醒，不是套模板，每次内容都不同</span></li>
-    <li><span class="feature-bullet"></span><span class="feature-label">每日自动抓取</span><span class="feature-value">GitHub Actions 定时管道每日自动抓取 7 大安全新闻源最新文章，去重分类后存入 GitHub Gist 云端素材库。前端拉取 + 本地 30 天缓存，离线也能浏览。管道失败自动创建 Issue 告警，不做静默失败</span></li>
+    <li><span class="feature-bullet"></span><span class="feature-label">每日自动抓取（4 班制）</span><span class="feature-value">GitHub Actions 每日 4 次抓取（07/13/19/01 北京时间），20 个 Google News 关键词 + 4 个官方站点 Bing 搜索，白名单 75 词过滤 + 五因子质量打分，去重分类后存入 GitHub Gist 云端素材库。管道失败自动告警，不做静默失败</span></li>
     <li><span class="feature-bullet"></span><span class="feature-label">15+ 模型品牌支持</span><span class="feature-value">内置 DeepSeek + OpenRouter + 智谱 GLM 三大通道，80+ 模型可选。API 设置面板统一管理品牌-模型-密钥，一键切换</span></li>
     <li><span class="feature-bullet"></span><span class="feature-label">关键词全覆盖</span><span class="feature-value">搜索关键词覆盖安全事故/班组建设/现场实训/职工健康/职业病/心脑血管/高血压/急救/饮食/戒烟限酒/季节防病/节日安全</span></li>
     <li><span class="feature-bullet"></span><span class="feature-label">扩展系统</span><span class="feature-value">内置钩子系统（10 个钩子点），覆盖搜索/抓取/生成/渲染全链路。新增搜索源或自定义逻辑无需改核心代码，复制扩展模板修改即可</span></li>
@@ -235,6 +235,7 @@
       <li><span class="limit-bullet"></span><span class="limit-val">搜索回退依赖通用搜索，自定义话题在安全站点无结果时走通用搜索兜底</span></li>
       <li><span class="limit-bullet"></span><span class="limit-val">生成质量受搜索结果影响较大——搜不到好内容则文章质量下降</span></li>
       <li><span class="limit-bullet"></span><span class="limit-val">API Key 存浏览器 localStorage，换设备需重新填写</span></li>
+      <li><span class="limit-bullet"></span><span class="limit-val">健康类内容覆盖率偏低——当前搜索词和打分偏好偏向安全类内容，高血压/职业病/饮食等健康类素材进入 top 30 的难度较大，正在持续优化中</span></li>
       <li><span class="limit-bullet"></span><span class="limit-val">自建 CORS 代理路线已放弃（SCF v1/v2/v3 均以崩溃告终），搜索改用博查 API，全文直接 fetch</span></li>
     </ul>
   </div>
@@ -323,7 +324,7 @@
 
 <footer class="footer">
   <div class="footer-line"></div>
-  强安系列 · 2026.07.20 · 内容由 AI 生成仅供参考
+  强安系列 · 2026.07.26 · 内容由 AI 生成仅供参考
 </footer>
 </body>
 </html>
