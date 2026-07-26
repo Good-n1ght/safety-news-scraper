@@ -148,7 +148,7 @@ function isSafetyRelated(title, summary) {
       remaining = remaining.substring(0, idx) + " ".repeat(kw.length) + remaining.substring(idx + kw.length);
     }
   }
-  return count >= 2;
+  return count >= 1; // test: 降阈值测试
 }
 
 function hasPenaltyKeywords(text) {
