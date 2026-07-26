@@ -33,10 +33,12 @@ const GIST_RAW_URL = `https://gist.githubusercontent.com/Good-n1ght/${GIST_ID}/r
 const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
 
 const MAX_TOTAL_STORED = 30;
+const MAX_FRESH_SLOTS = 20; // 本轮新增最多占 20 条，旧数据补充剩余到 30
 const FETCH_TIMEOUT_MS = 12000;
 const MAX_CONTENT_CHARS = 6000;
 const MAX_STORED_CHARS = 500;
 const MIN_DAILY_TARGET = 5; // 每日最少素材数，不足时从 fallback 补充
+const MIN_SCORE = 55; // 打分最低阈值
 
 // ========== 第一层：Google News RSS 关键词 ==========
 const GOOGLE_NEWS_KEYWORDS = [
@@ -484,9 +486,9 @@ async function main() {
   }
 
   // 6. 打分 + 分类 + 过滤
-  const enriched = uniqueResults.map(enrichItem).filter((item) => item.score >= 65);
+  const enriched = uniqueResults.map(enrichItem).filter((item) => item.score >= MIN_SCORE);
   enriched.sort((a, b) => (b.score || 0) - (a.score || 0));
-  console.log(`[打分过滤后] ${enriched.length} 条 (≥65分)`);
+  console.log(`[打分过滤后] ${enriched.length} 条 (≥${MIN_SCORE}分)`);
 
   // 分数分布
   const dist = {};
@@ -531,14 +533,15 @@ async function main() {
 
   console.log(`\n[合并] 新增 ${freshItems.length} 条，已有 ${existing.length} 条`);
 
-  // 9. 合并 + 按质量分降序（同分按日期降序）
-  const merged = [...freshItems, ...existing];
-  merged.sort((a, b) => {
-    const scoreDiff = (b.score || 0) - (a.score || 0);
-    if (scoreDiff !== 0) return scoreDiff;
-    return (b.publishedAt || "").localeCompare(a.publishedAt || "");
-  });
-  const final = merged.slice(0, MAX_TOTAL_STORED);
+  // 9. 新数据优先：本轮新增按分数取前 MAX_FRESH_SLOTS 条，旧数据补满到 MAX_TOTAL_STORED
+  freshItems.sort((a, b) => (b.score || 0) - (a.score || 0));
+  existing.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+  const topFresh = freshItems.slice(0, MAX_FRESH_SLOTS);
+  const remaining = MAX_TOTAL_STORED - topFresh.length;
+  const topOld = existing.slice(0, remaining);
+
+  const final = [...topFresh, ...topOld];
 
   // 10. 推送 Gist
   await updateGist(token, final);
