@@ -530,11 +530,15 @@ async function main() {
   const existingTitles = new Set(existing.map((e) => normalizeTitle(e.title)));
   const freshItems = enriched.filter((item) => !existingTitles.has(normalizeTitle(item.title)));
 
-  console.log(`\n[合并] 新增 ${freshItems.length} 条，已有 ${existing.length} 条`);
+  console.log(`\n[合并] 本轮新增 ${freshItems.length} 条，Gist 已有 ${existing.length} 条`);
 
-  // 9. 纯增量模式：仅保留本轮新增，按分数降序截断 30 条
+  // 9. 增量累积：本轮新增排前面，旧数据补满到 30（不丢旧素材库）
   freshItems.sort((a, b) => (b.score || 0) - (a.score || 0));
-  const final = freshItems.slice(0, MAX_TOTAL_STORED);
+  existing.sort((a, b) => (b.score || 0) - (a.score || 0));
+  const remaining = Math.max(0, MAX_TOTAL_STORED - freshItems.length);
+  const final = [...freshItems, ...existing.slice(0, remaining)];
+
+  console.log(`[合并结果] 本轮新增 ${freshItems.length} 条 + 旧数据 ${remaining} 条 = ${final.length} 条`);
 
   // 10. 推送 Gist
   await updateGist(token, final);
