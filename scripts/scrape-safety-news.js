@@ -33,7 +33,6 @@ const GIST_RAW_URL = `https://gist.githubusercontent.com/Good-n1ght/${GIST_ID}/r
 const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
 
 const MAX_TOTAL_STORED = 30;
-const MAX_FRESH_SLOTS = 20; // 本轮新增最多占 20 条，旧数据补充剩余到 30
 const FETCH_TIMEOUT_MS = 12000;
 const MAX_CONTENT_CHARS = 6000;
 const MAX_STORED_CHARS = 500;
@@ -533,15 +532,9 @@ async function main() {
 
   console.log(`\n[合并] 新增 ${freshItems.length} 条，已有 ${existing.length} 条`);
 
-  // 9. 新数据优先：本轮新增按分数取前 MAX_FRESH_SLOTS 条，旧数据补满到 MAX_TOTAL_STORED
+  // 9. 纯增量模式：仅保留本轮新增，按分数降序截断 30 条
   freshItems.sort((a, b) => (b.score || 0) - (a.score || 0));
-  existing.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-  const topFresh = freshItems.slice(0, MAX_FRESH_SLOTS);
-  const remaining = MAX_TOTAL_STORED - topFresh.length;
-  const topOld = existing.slice(0, remaining);
-
-  const final = [...topFresh, ...topOld];
+  const final = freshItems.slice(0, MAX_TOTAL_STORED);
 
   // 10. 推送 Gist
   await updateGist(token, final);
