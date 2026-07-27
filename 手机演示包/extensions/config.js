@@ -46,7 +46,7 @@ var GENERATION_DEFAULTS = {
 };
 
 /* ========== 素材源 ========== */
-var GIST_RAW_URL = "https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json";
+var GIST_RAW_URL = "https://gist.githubusercontent.com/Good-n1ght/156bb6326a83056a148b8cbd175ff463/raw/safety_news_display.json";
 var MATERIALS_CACHE_DAYS = 30;
 
 /* ========== 默认 API 配置 ========== */

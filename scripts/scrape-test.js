@@ -27,8 +27,8 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ========== 配置 ==========
-const GIST_ID = "360b3e9ec81bfee6765883cbb0da7aec";
-const GIST_FILENAME = "safety_news.json";
+const GIST_ID = "156bb6326a83056a148b8cbd175ff463";
+const GIST_FILENAME = "safety_news_display.json";
 const GIST_RAW_URL = `https://gist.githubusercontent.com/Good-n1ght/${GIST_ID}/raw/${GIST_FILENAME}`;
 const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
 
