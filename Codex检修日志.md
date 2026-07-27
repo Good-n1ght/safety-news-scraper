@@ -2,6 +2,17 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_b78bbede88ea11f1b66e525400e6dd8f
+    ReservedCode1: YvdnfnRnVYvtG10m29mCyL3AfHe+oM6QKHLN9F7hDWHCRcPVehA4+XhADhRuLrzrWIVLSViem1eoZMXjBNtWyfAV35EBjD95pzAFaX01ZTdd7hLUfnycGFLQboX2cFt4QpiP1Feb0omaLcD11eqzPXX3TTBy0l6osWgWPiZmdpajcM6OfqRh638lSM8=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_b78bbede88ea11f1b66e525400e6dd8f
+    ReservedCode2: YvdnfnRnVYvtG10m29mCyL3AfHe+oM6QKHLN9F7hDWHCRcPVehA4+XhADhRuLrzrWIVLSViem1eoZMXjBNtWyfAV35EBjD95pzAFaX01ZTdd7hLUfnycGFLQboX2cFt4QpiP1Feb0omaLcD11eqzPXX3TTBy0l6osWgWPiZmdpajcM6OfqRh638lSM8=
+---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
     ProduceID: 1d901ace6510f3f7162dab4a93f6993e_5161c05c889811f1b66e525400e6dd8f
     ReservedCode1: T2dpesQlwZRZf7ZvHNdUjBi0BGe6keeWMCvDNr9V7atVwsDfdnw5mviv8eDfrlEAbdb/sC0M54SwC5m6i7ZEayLAS2/AUoUpTq9383HmRVheJJ1oiRasQmDAbpRIFmofXw4bQKxA41Ph+4NpaCIbx6j/MzkYBi8yDCNztPIZEw5bzDbLVSNoaIE6pHg=
     ContentPropagator: 001191440300708461136T1XGW3
@@ -56,6 +67,45 @@ AIGC:
 - **新数据优先 20 个空位**：合并从「新旧混排→按分数截断」改为「新增取前 20→旧数据补满 30」，新增 `MAX_FRESH_SLOTS=20`，避免高分旧内容持续挤占新内容配额
 - **test 分支白名单 ≥1 测试**：降阈无显著效果，健康类仍不进 top 30，瓶颈不在白名单而在打分排序环节
 - **影响范围**：采集脚本 `scrape-safety-news.js` — 打分过滤 + 合并截断阶段
+
+---
+
+## 2026/7/26 Marvis 检修记录
+
+### 前端素材库上限恢复 30 条 + 缓存自动失效
+
+- **背景**：CHANGELOG 曾把 MAX_MATERIALS 从 30 改为 150，导致前端 localStorage 累积最多 150 条素材。云端 Gist 仍是 30 条，但前端展示 150 条，口径不一致。
+- **修复**：
+  1. 主文件及所有副本的 MAX_MATERIALS 恢复为 30
+  2. MATERIALS_CACHE_VERSION 从 3 升到 4，旧版号缓存自动丢弃
+  3. normalizeAndCapMaterials 裁剪后立即 saveMaterialsToCache，旧 150 条脏缓存自动覆写为干净 30 条
+  4. 三份入口 HTML 全部同步（MD5 一致）
+  5. 两个手机演示包 zip 重新打包
+- **影响文件**：强安兴企安全园地生文助手.html、手机演示包/强安兴企安全园地生文助手.html、手机演示包.zip、CHANGELOG.md
+- **Commit**: 5363789
+- **效果**：用户无需手动清 localStorage，下次打开页面自动显示 30 条。
+
+---
+
+## 2026/7/27 v6.0 双 Gist 架构 + 综合评分
+
+- **双 Gist 架构**：采集池（Gist A，360b3e9e）与展示库（Gist B，156bb632）分离，前者供调试，后者上限 100 条供前端读取
+- **综合评分**：finalScore = 质量分 × 时间衰减系数（≤3天×1.0 / 3-7天×0.8 / 7-14天×0.6 / 14-30天×0.4 / >30天丢弃），兼顾时效与质量
+- **管道流程重写**：打分 → 时间衰减 → 30天过滤 → 精选 Top-30 → 合并入 Gist B → 上限 100
+- **前端切换**：三份 HTML 的 Gist URL 从 A 切到 B，DS_VERSION 升至 gist-v6
+- **影响范围**：`scrape-safety-news.js`（主流程重写）、三份 HTML（Gist URL + DS_VERSION）
+
+---
+
+## 2026/7/27 Marvis 检修记录
+
+### 素材库上限改为 100 条滚动积累
+
+- **背景**：30 条上限导致每天旧素材被替换丢弃，用户希望保留近期素材累积。
+- **修复**：MAX_MATERIALS 从 30 改为 100，前端 localStorage 滚动积累，最多 100 条，旧的自然淘汰。
+- **验证**：JS 语法通过（node --check），HTML 标签闭合完整，三个模拟场景（首次打开/第二天增量/连续4-5天满载）全部通过。
+- **Commit**: 88932c8
+- **影响文件**：强安兴企安全园地生文助手.html（及两份副本）
 
 ---
 
@@ -210,6 +260,7 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 - **修复**：`localStorage.removeItem("materials_cache")` → `localStorage.removeItem(MATERIALS_LS_KEY)`；DS_VERSION 从 `"gist-v1"` 升级到 `"gist-v2"` 强制重新触发清空
 - **影响范围**：强安兴企安全园地生文助手.html — fetchTodayMaterials() 数据源版本检测块
 - **Commit**: `989ad9a`
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

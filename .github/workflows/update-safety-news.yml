@@ -10,6 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ========== 唯一 Job：采集 → 评分 → 去重 → 推送 Gist ==========
   scrape:
     runs-on: ubuntu-latest
     permissions:

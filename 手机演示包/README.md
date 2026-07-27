@@ -77,7 +77,6 @@
 ├── 强安视界_UI改版.html            # 产品2：新闻聚合阅读器
 ├── 强安系列产品介绍_汇报页.html     # 产品介绍汇报页
 ├── index.html                      # 强安视界在线版（部署到 GitHub Pages）
-├── 生文助手.html                  # 生文助手在线版（GitHub Pages 短名入口）
 ├── proxy/
 │   ├── index.js                    # CORS 代理服务（Express）
 │   └── package.json                # 代理依赖
@@ -111,3 +110,5 @@
 | v5.5.1 | 修复缓存清空后全部素材误标「新增」badge：仅增量获取时标记 isNew，首次加载不标 |
 | v5.6 | 抓取频率翻倍：GitHub Actions 从每天 2 次升级为 4 次（07:00/13:00/19:00/01:00 北京时间），6 小时间隔 |
 | v5.7 | 关键词扩展：Google News 从 10 扩到 20 个 + 白名单从 63 扩到 75 词 + 前端排序恢复质量分降序（新增置顶 → score 降序 → 同分按日期降序） |
+| v5.8 | MAX_MATERIALS 恢复 30 条上限 + 缓存版本 v3→v4 自动清理旧脏数据 + 去除多余的 init 阶段 saveMaterialsToCache |
+| v5.9 | 素材库上限改为 100 条滚动积累，旧素材自然淘汰 |

@@ -10,8 +10,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="强安兴企安全园地智能图文助手 — 面向国企工会和煤矿安全宣传的一站式AI图文生成工具，支持事故案例分析、班前会要点、安全知识问答等多种栏目模板，自动联网搜索安全素材并生成完整图文草稿。" />
-    <title>强安兴企安全园地智能图文助手</title>
+    <meta name="description" content="强安兴企安全园地智能生文助手 — 面向国企工会和煤矿安全宣传的一站式AI图文生成工具，支持事故案例分析、班前会要点、安全知识问答等多种栏目模板，自动联网搜索安全素材并生成完整图文草稿。" />
+    <title>强安兴企安全园地智能生文助手</title>
 <script async src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" onerror="console.warn('html2canvas CDN failed, export disabled')"></script>
 <!-- 扩展系统 -->
 <script src="extensions/hooks.js"></script>
@@ -1028,7 +1028,7 @@ select:focus {
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "强安兴企安全园地智能图文助手",
+      "name": "强安兴企安全园地智能生文助手",
       "description": "面向国企工会和煤矿安全宣传的一站式AI图文生成工具，支持事故案例分析、班前会要点、安全知识问答等栏目模板，自动联网搜索安全素材并生成完整图文草稿。",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web",
@@ -1045,7 +1045,7 @@ select:focus {
       <header class="topbar">
         <div>
           <p class="eyebrow">强安兴企</p>
-          <h1>安全园地图文助手</h1>
+          <h1>安全园地生文助手</h1>
         </div>
         <button class="icon-button" id="resetBtn" title="清空当前草稿" aria-label="清空当前草稿">&#8634;</button>
         <button class="icon-button" id="settingsBtn" title="API 设置" aria-label="API 设置">&#9881;</button>
@@ -1262,7 +1262,7 @@ select:focus {
 
     <script>
       /* ================================================================
-         强安兴企安全园地图文助手 — 单文件版
+         强安兴企安全园地生文助手 — 单文件版
          前端直连 DeepSeek API，无需后端服务器
          复制到手机浏览器打开即可使用
          ================================================================ */
@@ -1530,7 +1530,7 @@ function gd(key, fallback) {
 
 
       /* 统一裁剪：去重 + 新增置顶 + 质量分降序 + 截断至上限 */
-      var MAX_MATERIALS = 150;
+      var MAX_MATERIALS = 30;
       function normalizeAndCapMaterials(list) {
         var seen = {};
         var deduped = [];
@@ -1817,10 +1817,10 @@ function fetchArticleContent(item) {
         btn.disabled = true;
         btn.textContent = "加载中...";
         var todayISO = new Date().toISOString().slice(0, 10);
-        var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json";
+        var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/156bb6326a83056a148b8cbd175ff463/raw/safety_news_display.json";
 
         /* 数据源版本标记：源切换后自动清旧缓存 */
-        var DS_VERSION = "gist-v5";
+        var DS_VERSION = "gist-v6";
         var oldVer = localStorage.getItem("mat_datasource_version");
         if (oldVer !== DS_VERSION) {
           localStorage.removeItem(MATERIALS_LS_KEY);

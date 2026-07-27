@@ -1171,6 +1171,8 @@ var DEFAULT_API_KEY  = "";  // 请在设置面板中填入你的 API Key
 var DEFAULT_MODEL    = "deepseek-chat";
 var DEFAULT_BASE_URL = "https://api.deepseek.com";
 /* 安全读取 GENERATION_DEFAULTS，未加载 config.js 时回退硬编码值 */
+/* ========== 核心工具函数 ========== */
+// 通用 getOrDefault
 function gd(key, fallback) {
   try { return (typeof GENERATION_DEFAULTS !== 'undefined' && GENERATION_DEFAULTS[key] !== undefined) ? GENERATION_DEFAULTS[key] : fallback; }
   catch(e) { return fallback; }
@@ -1178,6 +1180,8 @@ function gd(key, fallback) {
 
 
 /* 根据 model ID 找品牌 */
+/* ========== 设置面板与模型管理 ========== */
+// 反查模型所属品牌
 function getBrandForModel(modelId) {
   for (var i = 0; i < MODEL_BRANDS.length; i++) {
     if (MODEL_BRANDS[i].models.indexOf(modelId) !== -1) return MODEL_BRANDS[i];
@@ -1193,6 +1197,7 @@ window.PEXELS_API_KEY = localStorage.getItem("pexels_api_key") || "";
 window.DS_CHAT_ENDPOINT = null;
 window.DS_API_MODEL     = null;
 
+// 刷新模型运行时信息
 function refreshModelRuntime(modelId) {
   window.DS_CHAT_ENDPOINT = null;
   window.DS_API_MODEL = null;
@@ -1203,6 +1208,7 @@ function refreshModelRuntime(modelId) {
 refreshModelRuntime(window.DS_MODEL);
 
 /* ---------- 工具函数 ---------- */
+// 轻量级 toast 提示
 function showToast(msg) {
   var toast = document.getElementById("toast");
   if (!toast) return;
@@ -1214,19 +1220,24 @@ function showToast(msg) {
   }, 1800);
 }
 
+// HTML 实体转义
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+// 读取 API Base URL
 function getApiBase() {
   return (window.DS_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
 }
 
+// 读取 API Key
 function getApiKey() {
   return window.DS_API_KEY || DEFAULT_API_KEY;
 }
 
 /* ---------- AI API 通用调用 ---------- */
+/* ========== AI API 调用 ========== */
+// OpenAI 兼容接口：支持 DeepSeek/OpenRouter/智谱，含超时重试
 function callDeepSeekDraft(params) {
   var baseUrl = getApiBase();
   var chatUrl = window.DS_CHAT_ENDPOINT || (baseUrl + "/v1/chat/completions");
@@ -1286,6 +1297,8 @@ function callDeepSeekDraft(params) {
 }
 
 /* ---------- Pexels 配图 ---------- */
+/* ========== Pexels 配图搜索 ========== */
+// 根据关键词从 Pexels 搜索免费可商用图片
 function fetchPexelsImages(keywords) {
   if (!keywords || !keywords.length) return Promise.resolve([]);
   var apiKey = window.PEXELS_API_KEY;
@@ -1312,6 +1325,7 @@ function fetchPexelsImages(keywords) {
   });
 }
 
+// 将 Pexels 搜索结果注入文章 HTML
 function injectPexelsImages(html, pexelsResults) {
   if (!html || !pexelsResults || !pexelsResults.length) return html;
   var result = html;
@@ -1331,6 +1345,7 @@ function injectPexelsImages(html, pexelsResults) {
 }
 
 /* ---------- 设置面板 ---------- */
+// 初始化设置面板
 function initSettings() {
   var els = {
     settingsOverlay: document.getElementById("settingsOverlay"),
@@ -1368,6 +1383,7 @@ function initSettings() {
   }
 
   // 品牌切换 → 刷新模型列表
+// 按品牌填充模型下拉
   function populateModels(brandName) {
     if (!els.modelSelect) return;
     els.modelSelect.innerHTML = "";
@@ -1394,6 +1410,7 @@ function initSettings() {
     updateBaseUrl();
   }
 
+// 切换模型时更新 Base URL
   function updateBaseUrl() {
     if (!els.modelSelect || !els.baseUrlInput) return;
     var modelId = els.modelSelect.value;
@@ -1552,6 +1569,8 @@ var SPORTS_KEYWORDS = [
 ];
 
 /* 判断标题是否包含正经内容关键词（国情/军事/科技/民生任一即可） */
+/* ========== 安全内容过滤与分类 ========== */
+// 检测文本是否包含严肃安全话题关键词
 function hasSeriousContext(text) {
   var seriousPing = ["国家", "中央", "国务院", "中国", "外交", "领导人", "习近平", "总书记",
     "军队", "国防", "军事", "演习", "武器", "航母", "导弹", "舰艇",
@@ -1598,17 +1617,20 @@ var els = {
 /* ---------- 工具函数 ---------- */
 
 
+// 设置顶部状态指示器
 function setStatus(dotClass, text) {
   els.statusDot.className = "status-dot " + (dotClass || "");
   els.statusText.textContent = text;
 }
 
+// 设置 AI 处理中状态
 function setAiProcess(active, text) {
   if (els.aiProcessPanel) els.aiProcessPanel.hidden = !active;
   if (els.aiProcessText && text) els.aiProcessText.textContent = text;
   if (els.generateBtn) els.generateBtn.classList.toggle("is-thinking", !!active);
 }
 
+// 格式化当前日期
 function formatDate() {
   var d = new Date();
   return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日 星期" + ["日","一","二","三","四","五","六"][d.getDay()];
@@ -1617,11 +1639,13 @@ function formatDate() {
 /* ---------- 分类判定 ---------- */
 /* 统一标题长度限制：超出30字符（约15个中文）截断并加"..." */
 var TITLE_MAX_LEN = 30;
+// 截断过长标题
 function truncateTitle(t) {
   t = (t || "").trim();
   return t.length > TITLE_MAX_LEN ? t.slice(0, TITLE_MAX_LEN) + "..." : t;
 }
 
+// 新闻自动分类（5 大类：国情/军事/科技/民生/财经生活）
 function classifyNews(title, summary) {
   var text = (title + " " + (summary || "")).toLowerCase();
   for (var cat in CATEGORY_KEYWORDS) {
@@ -1634,6 +1658,7 @@ function classifyNews(title, summary) {
   return "国情"; // 默认归入国情
 }
 
+// 黑名单过滤：排除非安全相关内容
 function isBlocked(title, summary) {
   var text = (title + " " + (summary || "")).toLowerCase();
   // 第一步：娱乐类无条件屏蔽
@@ -1651,6 +1676,7 @@ function isBlocked(title, summary) {
 }
 
 /* ---------- 智能排名 ---------- */
+// 新闻综合排序：安全相关加权 + 热度排序
 function rankNews(items) {
   // 归一化 hotValue（0-100 区间映射）
   var maxHot = 0;
@@ -1704,6 +1730,8 @@ function rankNews(items) {
 }
 
 /* ---------- 加载缓存 ---------- */
+/* ========== 本地缓存管理 ========== */
+// 加载标题改写缓存
 function loadRewrittenCache() {
   try {
     var raw = localStorage.getItem("rewritten_titles_cache");
@@ -1713,6 +1741,7 @@ function loadRewrittenCache() {
   }
 }
 
+// 保存标题改写缓存
 function saveRewrittenCache() {
   try {
     localStorage.setItem("rewritten_titles_cache", JSON.stringify(rewrittenCache));
@@ -1720,6 +1749,7 @@ function saveRewrittenCache() {
 }
 
 /* ---------- 加载嵌入新闻 ---------- */
+// 加载页面内嵌新闻数据
 function loadEmbeddedNews() {
   if (!__EMBED_NEWS__ || !__EMBED_NEWS__.items || !__EMBED_NEWS__.items.length) {
     return false;
@@ -1762,6 +1792,8 @@ function loadEmbeddedNews() {
 }
 
 /* ---------- RSS 解析 ---------- */
+/* ========== 新闻源抓取：RSS + 今日头条 + 百度热搜 ========== */
+// 解析 RSS/Atom XML 为新闻条目列表
 function parseRSS(xmlText) {
   var items = [];
   var reItem = /<item>([\s\S]*?)<\/item>/gi;
@@ -1783,10 +1815,12 @@ function parseRSS(xmlText) {
 }
 
 /* ---------- 今日头条多分类 feed 抓取 ---------- */
+// 抓取今日头条多分类 feed（热点/军事/科技/财经）
 function fetchToutiaoNews() {
   var controller = new AbortController();
   var timeoutId = setTimeout(function() { controller.abort(); }, TOUTIAO_TIMEOUT_MS);
 
+// 单个 URL 抓取辅助：带超时、UA、JSON 解析
   function fetchOne(url) {
     return fetch(CORS_PROXY + encodeURIComponent(url + "&_t=" + Date.now()), {
       signal: controller.signal,
@@ -1852,7 +1886,9 @@ var BAIDU_HOT_TABS = [
   { tab: "internation_news",  category: "国情",     label: "国际榜" }
 ];
 
+// 抓取百度热搜：综合榜/财经榜/民生榜/国际榜 四榜并发
 function fetchBaiduHot() {
+// 抓取单个百度热搜分类榜
   function fetchOneTab(tabConf) {
     var url = CORS_PROXY + encodeURIComponent("https://top.baidu.com/board?tab=" + tabConf.tab);
     return fetch(url, { headers: { "Accept": "text/html" } })
@@ -1909,6 +1945,7 @@ function fetchBaiduHot() {
 }
 
 /* ---------- 搜索引擎聚合扩展源（Bing 搜索 site: 方式抓取） ---------- */
+// 从搜索源列表并发抓取
 function fetchSearchSources() {
   var SEARCH_SOURCES = [
     { name: "应急管理部", site: "mem.gov.cn", keywords: "安全 事故 应急" },
@@ -1918,6 +1955,7 @@ function fetchSearchSources() {
     { name: "安全文化网", site: "anquan.com.cn", keywords: "安全 事故 应急 矿山 煤矿" }
   ];
 
+// 单个搜索源抓取
   function fetchOne(src) {
     var query = "site:" + src.site + " " + src.keywords;
     var url = CORS_PROXY + encodeURIComponent("https://www.bing.com/search?q=" + query + "&count=10&setlang=zh-cn");
@@ -1971,6 +2009,8 @@ function fetchSearchSources() {
 }
 
 /* ---------- 获取新闻 ---------- */
+/* ========== 新闻获取主流程 ========== */
+// 多源并发抓取 → 去重合并 → AI 过滤 → 排序 → 渲染
 function fetchNews() {
   els.fetchBtn.disabled = true;
   els.rewriteBtn.disabled = true;
@@ -2096,6 +2136,8 @@ function fetchNews() {
 }
 
 /* ---------- 渲染新闻列表 ---------- */
+/* ========== 界面渲染 ========== */
+// 渲染新闻卡片列表到 DOM
 function renderNews() {
   var filtered = newsItems;
   if (activeCategory !== "全部") {
@@ -2132,6 +2174,7 @@ function renderNews() {
   updateGenerateBtn();
 }
 
+// 更新批量生成按钮状态
 function updateGenerateBtn() {
   var count = Object.keys(selectedIds).length;
   els.selectedCount.textContent = count;
@@ -2139,6 +2182,8 @@ function updateGenerateBtn() {
 }
 
 /* ---------- AI 标题改写 ---------- */
+/* ========== AI 标题优化（通俗化表达） ========== */
+// 批量改写选中新闻标题为通俗化表达
 function rewriteTitles() {
   if (!getApiKey()) {
     showToast("请先在设置面板中填写 API Key");
@@ -2159,6 +2204,7 @@ function rewriteTitles() {
   var batchIndex = 0;
   var totalBatches = Math.ceil(toRewrite.length / batchSize);
 
+// 批量处理标题改写：每批 5 条，逐批调用 AI
   function processBatch() {
     if (batchIndex >= toRewrite.length) {
       els.rewriteBtn.disabled = false;
@@ -2193,6 +2239,7 @@ function rewriteTitles() {
   processBatch();
 }
 
+// AI 调用：批量标题通俗化改写
 function callAIRewrite(batchItems) {
   var titles = batchItems.map(function(item, i) {
     return (i + 1) + ". " + item.title + "（来源：" + item.source + "）";
@@ -2223,6 +2270,7 @@ function callAIRewrite(batchItems) {
 }
 
 /* ---------- 单条标题优化 ---------- */
+// 单条新闻标题改写
 function rewriteSingleTitle(itemId) {
   if (!getApiKey()) {
     showToast("请先在设置面板中填写 API Key");
@@ -2254,6 +2302,7 @@ function rewriteSingleTitle(itemId) {
 }
 
 /* ---------- 撤销单条标题优化 ---------- */
+// 撤销单条标题改写
 function undoRewrite(itemId) {
   delete rewrittenCache[itemId];
   saveRewrittenCache();
@@ -2266,6 +2315,8 @@ function undoRewrite(itemId) {
 /* ---------- Pexels 配图 ---------- */
 
 /* ---------- AI 写稿 ---------- */
+/* ========== AI 批量写稿 ========== */
+// 逐条为选中新闻生成 500-800 字标准化解读稿
 function generateArticles() {
   var selectedItems = newsItems.filter(function(item) { return selectedIds[item.id]; });
   if (!selectedItems.length) {
@@ -2296,6 +2347,7 @@ function generateArticles() {
     "5. 文末一行：参考来源：[来源名称]，原文链接：[链接]\n" +
     "6. 输出纯JSON：{\"title\":\"标题\",\"article\":\"正文\"}";
 
+// 处理单条新闻写稿
   function processOne(index) {
     if (index >= total) {
       els.generateBtn.disabled = false;
@@ -2349,6 +2401,7 @@ function generateArticles() {
   processOne(0);
 }
 
+// 渲染已生成的文章列表
 function renderGeneratedArticles() {
   els.articleSection.innerHTML = generatedArticles.map(function(article, i) {
     var title = escapeHtml(article.title);
@@ -2376,6 +2429,7 @@ function renderGeneratedArticles() {
 }
 
 /* ---------- 复制全部 ---------- */
+// 一键复制所有已生成文章到剪贴板
 function copyAll() {
   if (!generatedArticles.length) return;
   var text = generatedArticles.map(function(a) {
@@ -2394,6 +2448,8 @@ function copyAll() {
 }
 
 /* ---------- 选择逻辑 ---------- */
+/* ========== 新闻选择交互 ========== */
+// 切换单条新闻选中状态
 function toggleSelect(id) {
   if (selectedIds[id]) {
     delete selectedIds[id];
@@ -2403,6 +2459,7 @@ function toggleSelect(id) {
   renderNews();
 }
 
+// 全选所有新闻
 function selectAll() {
   var filtered = newsItems;
   if (activeCategory !== "全部") {
@@ -2412,12 +2469,15 @@ function selectAll() {
   renderNews();
 }
 
+// 取消全选
 function deselectAll() {
   selectedIds = {};
   renderNews();
 }
 
 /* ---------- 事件绑定 ---------- */
+/* ========== 事件绑定 ========== */
+// 绑定所有 UI 交互事件
 function bindEvents() {
   console.log("=== BIND EVENTS ===");
   // 新闻列表点击
@@ -2467,6 +2527,7 @@ function bindEvents() {
 
 
 /* ---------- 初始化 ---------- */
+// 应用入口：初始化设置、加载新闻、渲染
 function init() {
   console.log("=== INIT START ===");
   els.todayDate.textContent = formatDate();

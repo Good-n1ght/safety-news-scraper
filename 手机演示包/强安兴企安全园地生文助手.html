@@ -10,8 +10,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="强安兴企安全园地智能图文助手 — 面向国企工会和煤矿安全宣传的一站式AI图文生成工具，支持事故案例分析、班前会要点、安全知识问答等多种栏目模板，自动联网搜索安全素材并生成完整图文草稿。" />
-    <title>强安兴企安全园地智能图文助手</title>
+    <meta name="description" content="强安兴企安全园地智能生文助手 — 面向国企工会和煤矿安全宣传的一站式AI生文生成工具，支持事故案例分析、班前会要点、安全知识问答等多种栏目模板，自动联网搜索安全素材并生成完整生文草稿。" />
+    <title>强安兴企安全园地智能生文助手</title>
 <script async src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" onerror="console.warn('html2canvas CDN failed, export disabled')"></script>
 <!-- 扩展系统 -->
 <script src="extensions/hooks.js"></script>
@@ -1028,8 +1028,8 @@ select:focus {
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": "强安兴企安全园地智能图文助手",
-      "description": "面向国企工会和煤矿安全宣传的一站式AI图文生成工具，支持事故案例分析、班前会要点、安全知识问答等栏目模板，自动联网搜索安全素材并生成完整图文草稿。",
+      "name": "强安兴企安全园地智能生文助手",
+      "description": "面向国企工会和煤矿安全宣传的一站式AI生文生成工具，支持事故案例分析、班前会要点、安全知识问答等栏目模板，自动联网搜索安全素材并生成完整生文草稿。",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web",
       "offers": {
@@ -1045,7 +1045,7 @@ select:focus {
       <header class="topbar">
         <div>
           <p class="eyebrow">强安兴企</p>
-          <h1>安全园地图文助手</h1>
+          <h1>安全园地生文助手</h1>
         </div>
         <button class="icon-button" id="resetBtn" title="清空当前草稿" aria-label="清空当前草稿">&#8634;</button>
         <button class="icon-button" id="settingsBtn" title="API 设置" aria-label="API 设置">&#9881;</button>
@@ -1069,7 +1069,7 @@ select:focus {
       <section class="workspace">
         <div class="compose-panel">
           <div class="section-head">
-            <h2>一句话生成图文</h2>
+            <h2>一句话生成生文</h2>
             <span class="status-pill" id="statusPill">单机模式</span>
           </div>
 
@@ -1088,7 +1088,7 @@ select:focus {
           <textarea
             id="topicInput"
             rows="4"
-            placeholder="例如：我要做一篇唐山大地震纪念日相关的安全园地图文，要求正面宣传、能吸引职工往下看"
+            placeholder="例如：我要做一篇唐山大地震纪念日相关的安全园地生文，要求正面宣传、能吸引职工往下看"
           ></textarea>
 
           <div class="quick-tags" id="quickTags" aria-label="快捷主题"></div>
@@ -1147,7 +1147,7 @@ select:focus {
         <div class="section-head result-head">
           <div>
             <p class="eyebrow">草稿预览</p>
-            <h2 id="resultMainTitle">图文稿</h2>
+            <h2 id="resultMainTitle">生文稿</h2>
           </div>
           <div style="display:flex;gap:8px;">
             <button class="secondary-action" id="copyBtn">复制全文</button>
@@ -1262,7 +1262,7 @@ select:focus {
 
     <script>
       /* ================================================================
-         强安兴企安全园地图文助手 — 单文件版
+         强安兴企安全园地生文助手 — 单文件版
          前端直连 DeepSeek API，无需后端服务器
          复制到手机浏览器打开即可使用
          ================================================================ */
@@ -1287,6 +1287,8 @@ var DEFAULT_BASE_URL = "https://api.deepseek.com";
 }
 
 /* 根据 model ID 找品牌 */
+/* ========== 核心 API 配置与工具函数 ========== */
+// 根据模型 ID 反查所属品牌名称
 function getBrandForModel(modelId) {
   for (var i = 0; i < MODEL_BRANDS.length; i++) {
     if (MODEL_BRANDS[i].models.indexOf(modelId) !== -1) return MODEL_BRANDS[i];
@@ -1310,6 +1312,7 @@ window.GIST_ID    = localStorage.getItem("gist_id")    || "eb0fea051748ee0b33070
 window.GIST_TOKEN = localStorage.getItem("gist_token") || "";
 window.GIST_RAW   = "https://gist.githubusercontent.com/Good-n1ght/" + window.GIST_ID + "/raw/drafts.json";
 /* ---------- 工具函数 ---------- */
+// 轻量级 toast 提示，3 秒后自动消失
 function showToast(msg) {
   var toast = document.getElementById("toast");
   if (!toast) return;
@@ -1321,19 +1324,24 @@ function showToast(msg) {
   }, 1800);
 }
 
+// HTML 实体转义，防止 XSS
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
+// 从 localStorage 读取 API Base URL，带默认值回退
 function getApiBase() {
   return (window.DS_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "");
 }
 
+// 从 localStorage 读取 API Key，带默认值回退
 function getApiKey() {
   return window.DS_API_KEY || DEFAULT_API_KEY;
 }
 
 /* ---------- 设置面板 ---------- */
+/* ========== 设置面板：品牌/模型/参数管理 ========== */
+// 初始化设置面板：绑定品牌下拉 + 模型下拉联动
 function initSettings() {
   var els = {
     settingsOverlay: document.getElementById("settingsOverlay"),
@@ -1371,6 +1379,7 @@ function initSettings() {
   }
 
   // 品牌切换 → 刷新模型列表
+// 根据选中的品牌名填充模型下拉列表
   function populateModels(brandName) {
     if (!els.modelSelect) return;
     els.modelSelect.innerHTML = "";
@@ -1397,6 +1406,7 @@ function initSettings() {
     updateBaseUrl();
   }
 
+// 切换模型时同步更新 Base URL 输入框
   function updateBaseUrl() {
     if (!els.modelSelect || !els.baseUrlInput) return;
     var modelId = els.modelSelect.value;
@@ -1519,10 +1529,12 @@ function initSettings() {
       };
 
       /* ========== 素材数据（localStorage缓存优先，有效期15天） ========== */
-      var MATERIALS_CACHE_VERSION = 3;
+      var MATERIALS_CACHE_VERSION = 4;
       var MATERIALS_LS_KEY = "huanxing_materials_cache_v" + MATERIALS_CACHE_VERSION;
       var MATERIALS_CACHE_DAYS = 30;
 /* 安全读取 GENERATION_DEFAULTS，未加载 config.js 时回退硬编码值 */
+/* ========== 素材获取与管理 ========== */
+// 通用 getOrDefault：从生成参数中按 key 读取，未设置则返回 fallback
 function gd(key, fallback) {
   try { return (typeof GENERATION_DEFAULTS !== 'undefined' && GENERATION_DEFAULTS[key] !== undefined) ? GENERATION_DEFAULTS[key] : fallback; }
   catch(e) { return fallback; }
@@ -1530,7 +1542,8 @@ function gd(key, fallback) {
 
 
       /* 统一裁剪：去重 + 新增置顶 + 质量分降序 + 截断至上限 */
-      var MAX_MATERIALS = 150;
+      var MAX_MATERIALS = 100;
+// 规范化素材列表：打散分类、去重、排序、截断
       function normalizeAndCapMaterials(list) {
         var seen = {};
         var deduped = [];
@@ -1552,6 +1565,7 @@ function gd(key, fallback) {
         return deduped.slice(0, MAX_MATERIALS);
       }
 
+// 从 localStorage 读取素材缓存（带 30 天过期策略）
       function loadMaterialsFromCache() {
         try {
           var raw = localStorage.getItem(MATERIALS_LS_KEY);
@@ -1564,6 +1578,7 @@ function gd(key, fallback) {
         } catch(e) { localStorage.removeItem(MATERIALS_LS_KEY); return null; }
       }
 
+// 将素材列表写入 localStorage 缓存
       function saveMaterialsToCache(mats) {
         try {
           localStorage.setItem(MATERIALS_LS_KEY, JSON.stringify({
@@ -1601,6 +1616,8 @@ var TOPIC_CALENDAR = [
   { month: 12, range: [1,31], topic: "岁末安全与来年规划", keywords: "岁末 收官 安全总结 元旦 节假日 值班 防火 防盗 防事故 年终奖 安全目标", desc: "岁末安全" }
 ];
 
+/* ========== 搜索模块：博查 API 搜索 + 全文抓取 ========== */
+// 获取当前月份对应的安全主题（12 个月各有侧重）
 function getCurrentMonthTopic() {
   var now = new Date();
   var m = now.getMonth() + 1;
@@ -1610,6 +1627,7 @@ function getCurrentMonthTopic() {
   return null;
 }
 
+// 根据当前日期生成季节性安全关键词
 function getCalendarKeywords() {
   var entry = getCurrentMonthTopic();
   return entry ? entry.keywords : "";
@@ -1639,6 +1657,7 @@ var COLUMN_TEMPLATES = {
   }
 };
 
+// 根据选中的模板填充搜索框话题和体裁
 function applyTemplate(tplKey) {
   var tpl = COLUMN_TEMPLATES[tplKey];
   if (!tpl) return;
@@ -1656,7 +1675,9 @@ var CORS_PROXY_LIST = [
 ];
 }
 var CORS_PROXY_IDX = 0;
+// [已废弃] 返回当前 CORS 代理地址。v5 后全文抓取已不再经过代理
 function getProxy() { return CORS_PROXY_LIST[CORS_PROXY_IDX]; }
+// [已废弃] 切换到下一个 CORS 代理
 function switchProxy() { CORS_PROXY_IDX = (CORS_PROXY_IDX + 1) % CORS_PROXY_LIST.length; }
 
 /* ========== 安全类搜索源 ========== */
@@ -1673,6 +1694,7 @@ var SEARCH_SOURCES = [
 };
 
 /* ========== 博查 Web Search API ========== */
+// 博查 API 核心搜索：site: 指定 7 站，聚合搜索结果
 function searchBocha(topic, injectCalendar) {
   /* === Hook: beforeSearch === */
   var searchCtx = Hooks.trigger(Hooks.BEFORE_SEARCH, { query: topic, sources: SEARCH_SOURCES });
@@ -1752,6 +1774,7 @@ function searchBocha(topic, injectCalendar) {
 }
 
 /* ========== 抓取文章全文 ========== */
+// 全文抓取：直接 fetch 目标 URL HTML，去标签提取纯文本
 function fetchArticleContent(item) {
   var url = item.link;
 
@@ -1786,6 +1809,7 @@ function fetchArticleContent(item) {
 
 /* ========== 获取安全素材（动态搜索） ========== */
 
+// 文章自动分类：基于关键词匹配，映射到 11 个安全主题分类
       function classifyText(text, source) {
         text = text.toLowerCase();
         if (text.indexOf("职业健康") !== -1 || text.indexOf("职业病") !== -1 || text.indexOf("尘肺") !== -1 || text.indexOf("体检") !== -1) return "职业健康";
@@ -1800,6 +1824,7 @@ function fetchArticleContent(item) {
         if (text.indexOf("法规") !== -1 || text.indexOf("法律") !== -1 || text.indexOf("条例") !== -1 || text.indexOf("意见") !== -1 || text.indexOf("规划") !== -1) return "政策法规";
         return "综合安全";
       }
+// 从标题+摘要中提取标签关键词
       function extractTags(title, summary) {
         var text = title + " " + summary;
         var tags = [];
@@ -1812,15 +1837,16 @@ function fetchArticleContent(item) {
         return tags.slice(0, 3);
       }
 
+// 主入口：拉取 Gist 云端素材库 + localStorage 缓存合并去重
       function fetchTodayMaterials() {
         var btn = document.getElementById("fetchMaterialsBtn");
         btn.disabled = true;
         btn.textContent = "加载中...";
         var todayISO = new Date().toISOString().slice(0, 10);
-        var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json";
+        var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/156bb6326a83056a148b8cbd175ff463/raw/safety_news_display.json";
 
         /* 数据源版本标记：源切换后自动清旧缓存 */
-        var DS_VERSION = "gist-v5";
+        var DS_VERSION = "gist-v6";
         var oldVer = localStorage.getItem("mat_datasource_version");
         if (oldVer !== DS_VERSION) {
           localStorage.removeItem(MATERIALS_LS_KEY);
@@ -1863,13 +1889,9 @@ function fetchArticleContent(item) {
 
             /* 累积合并：旧库 + 新抓取，标题去重，统一裁剪 */
             var oldMats = loadMaterialsFromCache() || [];
-            /* 清除超过1天的旧"新增"标记 */
+            /* 清除所有旧"新增"标记，避免缓存污染导致全部误标 */
             var todayStr = new Date().toISOString().slice(0, 10);
-            oldMats.forEach(function(om) {
-              if (om.isNew && om.addedAt && om.addedAt !== todayStr) {
-                om.isNew = false;
-              }
-            });
+            oldMats.forEach(function(om) { om.isNew = false; });
             var existingTitles = {};
             oldMats.forEach(function(om) { existingTitles[om.title] = true; });
             var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
@@ -1892,7 +1914,7 @@ function fetchArticleContent(item) {
               }
             });
             quickTags = materials.slice(0, 6).map(function(m3) {
-              return "我要做一篇" + m3.title.substring(0, 30) + "相关的安全园地图文";
+              return "我要做一篇" + m3.title.substring(0, 30) + "相关的安全园地生文";
             });
 
             /* === Hook: afterMaterials === */
@@ -1920,6 +1942,8 @@ function fetchArticleContent(item) {
 
 
             /* ========== 导出日报卡片 ========== */
+/* ========== 导出/导入：PNG 卡片 + JSON 素材 ========== */
+// 导出当日素材为 PNG 卡片图片（html2canvas）
       function exportDailyCard() {
         var today = getCurrentDateStr();
         var todayISO = new Date().toISOString().slice(0, 10);
@@ -1967,6 +1991,7 @@ function fetchArticleContent(item) {
 
       /* ========== 素材导入导出 ========== */
 
+// 导出素材为 JSON 文件下载
       function exportMaterials() {
         var exportData = {
           version: 1,
@@ -1988,6 +2013,7 @@ function fetchArticleContent(item) {
         showToast("已导出 " + materials.length + " 条素材");
       }
 
+// 从本地 JSON 文件导入素材
       function importMaterials() {
         var input = document.createElement("input");
         input.type = "file";
@@ -2084,6 +2110,8 @@ function fetchArticleContent(item) {
 
       /* ========== 初始化 ========== */
 
+/* ========== 界面初始化与渲染 ========== */
+// 应用入口：渲染指标、快捷标签、分类 Tab、素材列表、绑定事件
       function init() {
         console.log("=== INIT START ===");
         renderMetrics();
@@ -2095,6 +2123,7 @@ function fetchArticleContent(item) {
         setTimeout(initHistory, 1000);
       }
 
+// 渲染顶部统计卡片：素材总数、今日新增、覆盖分类数
       function renderMetrics() {
         var uniqueSources = new Set(materials.map(function(item) { return item.source.split(" / ")[0]; }));
         els.todayCount.textContent = materials.length;
@@ -2102,12 +2131,14 @@ function fetchArticleContent(item) {
         els.reviewCount.textContent = materials.filter(function(item) { return item.review; }).length;
       }
 
+// 渲染快捷标签栏（日历关键词 + 常用话题）
       function renderQuickTags() {
         els.quickTags.innerHTML = quickTags
           .map(function(tag) { return '<button class="chip" type="button" data-topic="' + escapeHtml(tag) + '">' + escapeHtml(tag) + '</button>'; })
           .join("");
       }
 
+// 渲染分类筛选 Tab 栏
       function renderTabs() {
         els.categoryTabs.innerHTML = categories
           .map(function(category) {
@@ -2118,6 +2149,7 @@ function fetchArticleContent(item) {
           .join("");
       }
 
+// 根据当前选中分类过滤素材列表
       function getFilteredMaterials() {
         var keyword = els.materialSearch.value.trim().toLowerCase();
         return materials.filter(function(item) {
@@ -2128,6 +2160,7 @@ function fetchArticleContent(item) {
         });
       }
 
+// 渲染素材卡片列表
       function renderMaterials() {
         var filtered = getFilteredMaterials();
         if (!filtered.length) {
@@ -2153,6 +2186,8 @@ function fetchArticleContent(item) {
           .join("");
       }
 
+/* ========== 事件绑定：用户交互响应 ========== */
+// 绑定所有 UI 交互事件（搜索、分类切换、卡片点击、导出等）
       function bindEvents() {
         console.log("=== BIND EVENTS START ===");
         els.quickTags.addEventListener("click", function(event) {
@@ -2241,8 +2276,10 @@ function fetchArticleContent(item) {
 
       }
 
-      /* ========== 核心：生成图文草稿 ========== */
+      /* ========== 核心：生成生文草稿 ========== */
 
+/* ========== AI 文章生成 ========== */
+// 生成文章主流程：收集参数 → 组装 prompt → 调用 AI → 渲染结果
             function generateDraft() {
         if (!getApiKey()) {
           showToast("请先在设置面板中填写 API Key");
@@ -2365,14 +2402,16 @@ function fetchArticleContent(item) {
 
 /* ========== 直连 DeepSeek API ========== */
 
+// 获取当前日期格式化字符串（YYYY年M月D日）
       function getCurrentDateStr() {
         return new Date().toLocaleDateString("zh-CN", {
           year: "numeric", month: "long", day: "numeric", weekday: "long"
         });
       }
 
+// 构建 AI 系统提示词（角色设定 + 输出格式约束 + 搜索结果注入）
       function buildAISystemPrompt(searchResults) {
-        var base = `你是一个服务国企工会和煤矿安全宣传的资深图文编辑。你的任务是为\u201C强安兴企安全园地\u201D撰写一篇完整的、供人工审核后使用的安全教育图文草稿。\n\n核心要求：\n0. 必须严格基于提供的搜索结果撰写，不可凭空编造数据和案例。不要在 content 正文中插入"来源一""来源二"等引用标注。\n1. 输出严格 JSON，包含 title、titleAlternatives、lead、content、imageSuggestions、reviewReminders、references 七个字段\n2. title：一个让人想点进去看的标题，不低俗不标题党，但要抓人眼球\n3. titleAlternatives：3个备选标题的数组，每个标题各具风格（如一个偏严肃、一个偏接地气、一个偏提问式），供编辑最终选用\n4. lead：适合手机端阅读的短导语（2-3句话），点出核心安全问题和阅读价值，吸引读者往下看，不超过80字\n5. content：正文，用 HTML 片段格式输出。必须达到 800-1500 字。结构要求：\n   - 开头：用真实案例/数据/场景切入（2-3段），让读者感觉这事跟自己有关\n   - 正文：至少 4-5 个小节（用 h3 标签），每节 150-300 字。结构是「问题是什么 → 为什么危险 → 怎么做才对 → 做完这一步下一步该做什么」，把安全提醒变成可操作的具体步骤\n   - 结尾：落到行动，告诉读者「现在就去检查XX」「今天下班前做XX」，不要喊口号\n   - 不要只写\"注意安全\"\"加强管理\"，要写具体的操作指引\n6. imageSuggestions：配图建议数组（3-5条，每条是具体场景描述而非英文关键词，如\"矿工班前会现场照片，展现酒精检测环节\"\"防汛巡查人员在矿井口检查排水设施\"\"高温作业现场发放防暑降温物资\"）\n7. reviewReminders：发布前审核提醒数组（2-4条，如\"涉及领导行程不写具体预测\"\"涉及事故不夸大不猎奇\"\"涉及统计数据需二次核实原始来源\"\"涉及具体企业名称需确认是否可公开\"）\n8. references：参考来源数组（每条含 source 和 url 两个字段，仅用于侧栏展示供编辑核对出处，不要在 content 正文中插入来源标注）\n9. 不要出现\u201C开头三句话\u201D\u201C标题风格\u201D\u201C智能拆解\u201D\u201C为什么这样写\u201D等元信息\n10. 宣传口径要稳妥，党政/重大纪念日/灾害/健康都要正面宣传\n11. 不编造领导行程、未确认会议、未给出的数据\n12. 健康类只做科普提醒，不做诊断治疗建议\n13. 语言要接地气，像老师傅跟工友聊天，不要官八股\\n14. 这是供人工审核后使用的图文草稿，不可直接发布`;
+        var base = `你是一个服务国企工会和煤矿安全宣传的资深生文编辑。你的任务是为\u201C强安兴企安全园地\u201D撰写一篇完整的、供人工审核后使用的安全教育生文草稿。\n\n核心要求：\n0. 必须严格基于提供的搜索结果撰写，不可凭空编造数据和案例。不要在 content 正文中插入"来源一""来源二"等引用标注。\n1. 输出严格 JSON，包含 title、titleAlternatives、lead、content、imageSuggestions、reviewReminders、references 七个字段\n2. title：一个让人想点进去看的标题，不低俗不标题党，但要抓人眼球\n3. titleAlternatives：3个备选标题的数组，每个标题各具风格（如一个偏严肃、一个偏接地气、一个偏提问式），供编辑最终选用\n4. lead：适合手机端阅读的短导语（2-3句话），点出核心安全问题和阅读价值，吸引读者往下看，不超过80字\n5. content：正文，用 HTML 片段格式输出。必须达到 800-1500 字。结构要求：\n   - 开头：用真实案例/数据/场景切入（2-3段），让读者感觉这事跟自己有关\n   - 正文：至少 4-5 个小节（用 h3 标签），每节 150-300 字。结构是「问题是什么 → 为什么危险 → 怎么做才对 → 做完这一步下一步该做什么」，把安全提醒变成可操作的具体步骤\n   - 结尾：落到行动，告诉读者「现在就去检查XX」「今天下班前做XX」，不要喊口号\n   - 不要只写\"注意安全\"\"加强管理\"，要写具体的操作指引\n6. imageSuggestions：配图建议数组（3-5条，每条是具体场景描述而非英文关键词，如\"矿工班前会现场照片，展现酒精检测环节\"\"防汛巡查人员在矿井口检查排水设施\"\"高温作业现场发放防暑降温物资\"）\n7. reviewReminders：发布前审核提醒数组（2-4条，如\"涉及领导行程不写具体预测\"\"涉及事故不夸大不猎奇\"\"涉及统计数据需二次核实原始来源\"\"涉及具体企业名称需确认是否可公开\"）\n8. references：参考来源数组（每条含 source 和 url 两个字段，仅用于侧栏展示供编辑核对出处，不要在 content 正文中插入来源标注）\n9. 不要出现\u201C开头三句话\u201D\u201C标题风格\u201D\u201C智能拆解\u201D\u201C为什么这样写\u201D等元信息\n10. 宣传口径要稳妥，党政/重大纪念日/灾害/健康都要正面宣传\n11. 不编造领导行程、未确认会议、未给出的数据\n12. 健康类只做科普提醒，不做诊断治疗建议\n13. 语言要接地气，像老师傅跟工友聊天，不要官八股\\n14. 这是供人工审核后使用的生文草稿，不可直接发布`;
         var jsonFormat = "\n\nJSON 格式：\n{\"title\":\"文章标题\",\"titleAlternatives\":[\"备选标题1\",\"备选标题2\",\"备选标题3\"],\"lead\":\"适合手机阅读的短导语，2-3句话\",\"content\":\"<p>开头勾人段落</p><h3>小标题</h3><p>正文段落</p><p>结尾段落</p>\",\"imageSuggestions\":[\"矿工班前会现场照片\",\"防汛巡查现场图\",\"高温作业防暑实拍\"],\"reviewReminders\":[\"审核提醒1\",\"审核提醒2\",\"审核提醒3\"],\"references\":[{\"source\":\"来源名称\",\"url\":\"https://来源链接\"}]}";
         if (!searchResults || !searchResults.length) return base + jsonFormat;
         var formattedResults = searchResults.map(function(r, i) {
@@ -2381,6 +2420,7 @@ function fetchArticleContent(item) {
         return base + "\n\n【联网搜索结果】以下是实时搜索到的相关资料，请严格基于这些内容撰写：\n" + formattedResults + jsonFormat;
       }
 
+// 构建 AI 用户消息（话题、体裁、受众、字数等参数）
       function buildAIUserPrompt(params) {
         var topic = params.topic;
         var audience = params.audience;
@@ -2399,6 +2439,7 @@ function fetchArticleContent(item) {
         return prompt;
       }
 
+// AI API 调用核心：OpenAI 兼容接口，支持 DeepSeek/OpenRouter/智谱
       function callDeepSeekDraft(params) {
         /* === Hook: beforeGenerate === */
         var genCtx = Hooks.trigger(Hooks.BEFORE_GENERATE, {
@@ -2493,6 +2534,8 @@ function fetchArticleContent(item) {
       });
       }
 
+/* ========== AI 结果解析与规范化 ========== */
+// 从 AI 返回文本中提取 JSON 块
       function parseJsonContent(content) {
         var trimmed = content.trim();
         try {
@@ -2504,10 +2547,12 @@ function fetchArticleContent(item) {
         }
       }
 
+// 清理模型返回值的首尾空白和引号
       function cleanModelText(value) {
         return String(value == null ? "" : value).replace(/\s+/g, " ").trim();
       }
 
+// 规范化思考过程字段
       function normalizeTrace(value) {
         if (!Array.isArray(value)) return null;
         var rows = value
@@ -2517,6 +2562,7 @@ function fetchArticleContent(item) {
         return rows.length ? rows : null;
       }
 
+// 规范化标题字段
       function normalizeTitle(value) {
         if (!value || typeof value !== "object") return null;
         var title = cleanModelText(value.title);
@@ -2528,12 +2574,14 @@ function fetchArticleContent(item) {
         };
       }
 
+// 规范化备选标题列表
       function normalizeTitles(value) {
         if (!Array.isArray(value)) return null;
         var rows = value.map(normalizeTitle).filter(Boolean).slice(0, 3);
         return rows.length ? rows : null;
       }
 
+// 规范化正文小节列表
       function normalizeSections(value) {
         if (!Array.isArray(value)) return null;
         var rows = value
@@ -2543,12 +2591,14 @@ function fetchArticleContent(item) {
         return rows.length ? rows : null;
       }
 
+// 规范化字符串数组
       function normalizeStringArray(value) {
         if (!Array.isArray(value)) return null;
         var rows = value.map(cleanModelText).filter(Boolean).slice(0, 8);
         return rows.length ? rows : null;
       }
 
+// 规范化引用来源列表
       function normalizeSources(value, fallback) {
         var sourceRows = Array.isArray(value) ? value : fallback;
         var rows = sourceRows
@@ -2565,9 +2615,10 @@ function fetchArticleContent(item) {
         return rows.length ? rows : null;
       }
 
+// [降级] 网络不可用时生成本地草稿（纯模板填充，无 AI）
       function makeLocalDraft(topic, audience, scenario, materialsArr) {
         return {
-          title: topic.slice(0, 26) || "安全园地图文稿",
+          title: topic.slice(0, 26) || "安全园地生文稿",
           coverDesc: "建议使用安全园地通用封面模板，突出" + topic.slice(0, 15) + "主题",
           content: "<p>安全是企业的生命线，更是每个职工家庭的幸福基石。今天，我们聚焦" + topic.slice(0, 20) + "，一起把安全意识变成日常习惯。</p><h3>为什么要关注这个话题</h3><p>对" + audience + "来说，" + topic.slice(0, 20) + "与日常工作和安全息息相关。把风险想在前面，把隐患查在前面，才能真正守住安全底线。</p><h3>应该注意什么</h3><p>从班前确认开始，把规范操作落实到每一步。多看一眼、多问一句、多守一道关，安全才能有保障。</p><h3>把提醒变成行动</h3><p>今天就开始：班前多确认一步，现场多提醒一句，发现隐患及时报告。安全不是口号，是每天都要做到的细节。</p>",
           images: ["coal mine safety", "workplace safety", "team meeting"],
@@ -2575,6 +2626,7 @@ function fetchArticleContent(item) {
         };
       }
 
+// AI 返回结果规范化主函数：逐字段清洗并补全默认值
       function normalizeModelDraft(raw, context) {
         var localFallback = makeLocalDraft(context.topic, context.audience, context.scenario, context.materials);
         return {
@@ -2596,6 +2648,8 @@ function fetchArticleContent(item) {
 
       /* ========== 渲染函数 ========== */
 
+/* ========== 草稿渲染与交互 ========== */
+// 渲染生成结果到预览区（含标题、正文、配图方案、审核提醒）
       function renderDraft(draft) {
         els.resultMainTitle.textContent = draft.mainTitle.title;
         if (els.coverTitle) els.coverTitle.textContent = draft.mainTitle.title;
@@ -2627,10 +2681,11 @@ function fetchArticleContent(item) {
         showResultToggle();
       }
 
+// AI 生成版本渲染：含思考过程折叠、全文格式化输出
       function renderAiDraft(draft) {
         // 主标题
-        els.resultMainTitle.textContent = draft.title || "图文稿";
-        if (els.coverTitle) els.coverTitle.textContent = draft.title || "图文稿";
+        els.resultMainTitle.textContent = draft.title || "生文稿";
+        if (els.coverTitle) els.coverTitle.textContent = draft.title || "生文稿";
 
         // 封面描述
         if (draft.coverDesc) {
@@ -2744,6 +2799,7 @@ function fetchArticleContent(item) {
 
       /* ========== 写作思路折叠切换 ========== */
 
+// 显示搜索结果/AI 草稿切换按钮
       function showResultToggle() {
         var wrap = document.getElementById("resultToggleWrap");
         if (wrap) wrap.style.display = "";
@@ -2771,6 +2827,7 @@ function fetchArticleContent(item) {
 
       /* ========== 工具函数 ========== */
 
+// 提取草稿纯文本（供复制用）
       function getDraftText() {
         if (els.resultPanel.hidden) return "";
         var title = els.resultMainTitle.textContent;
@@ -2779,12 +2836,13 @@ function fetchArticleContent(item) {
         return title + "\n\n" + bodyText;
       }
 
+// 一键复制草稿到剪贴板
       function copyDraft() {
         var text = getDraftText();
         if (!text) return;
         try {
           navigator.clipboard.writeText(text).then(function() {
-            showToast("已复制图文草稿。");
+            showToast("已复制生文草稿。");
           }).catch(function() {
             showToast("当前浏览器不支持自动复制。");
           });
@@ -2793,6 +2851,7 @@ function fetchArticleContent(item) {
         }
       }
 
+// 重置草稿区域到初始状态
       function resetDraft() {
         state.activeCategory = "全部";
         state.selectedMaterialId = null;
@@ -2804,11 +2863,13 @@ function fetchArticleContent(item) {
         showToast("已清空当前草稿。");
       }
 
+// 设置状态栏文字
       function setStatus(text) {
         els.statusPill.textContent = text;
       }
 
       /* ===== 生成进度条控制 ===== */
+// 显示进度条
       function showProgress() {
         var bar = document.getElementById("genProgress");
         if (!bar) return;
@@ -2821,6 +2882,7 @@ function fetchArticleContent(item) {
         // 第一步立即 active
         steps[0].classList.add("active");
       }
+// 更新进度条到指定步骤
       function stepProgress(idx) {
         // idx: 0-based, 标记该步为 done，下一步为 active
         var bar = document.getElementById("genProgress");
@@ -2843,6 +2905,7 @@ function fetchArticleContent(item) {
           }
         }
       }
+// 隐藏进度条
       function hideProgress() {
         var bar = document.getElementById("genProgress");
         if (!bar) return;
@@ -2854,6 +2917,8 @@ function fetchArticleContent(item) {
       var _historyCache = null;
 
       // 从 Gist Raw 加载历史稿件
+/* ========== 历史记录管理 ========== */
+// 从 localStorage 加载历史记录列表
       function loadHistory() {
         return fetch(window.GIST_RAW + "?t=" + Date.now())
           .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
@@ -2868,6 +2933,7 @@ function fetchArticleContent(item) {
       }
 
       // 保存稿件到 Gist（前端直连 GitHub API）
+// 保存当前草稿到历史记录
       function saveDraft(article) {
         var token = window.GIST_TOKEN;
         if (!token) { showToast("请先在 API 设置里填写 GitHub Token"); return Promise.reject("no token"); }
@@ -2906,6 +2972,7 @@ function fetchArticleContent(item) {
       }
 
       // 收集当前页面稿件内容
+// 收集当前草稿数据为可存储对象
       function collectDraft() {
         var title = document.getElementById("topicInput").value.trim();
         var mainTitle = document.getElementById("resultMainTitle").textContent.trim();
@@ -2935,6 +3002,7 @@ function fetchArticleContent(item) {
 
       // 保存按钮事件
       var _saveBtnBound = false;
+// 绑定保存历史按钮事件
       function bindSaveHistory() {
         if (_saveBtnBound) return;
         var btn = document.getElementById("saveHistoryBtn");
@@ -2960,6 +3028,7 @@ function fetchArticleContent(item) {
       }
 
       // 渲染历史列表
+// 渲染历史记录列表
       function renderHistory() {
         loadHistory().then(function(articles) {
           var list = document.getElementById("historyList");
@@ -3018,6 +3087,7 @@ function fetchArticleContent(item) {
       }
 
       // 初始化历史模块
+// 初始化历史记录模块
       function initHistory() {
         bindSaveHistory();
         var refreshBtn = document.getElementById("refreshHistoryBtn");
@@ -3032,7 +3102,10 @@ function fetchArticleContent(item) {
       (function(){
         var db = document.getElementById("diagBar");
         var msgs = [];
+/* ========== 诊断日志 ========== */
+// 诊断日志记录
         function log(m){ msgs.push(m); if(db) db.textContent = msgs.join(" | "); console.log("[DIAG]", m); }
+// 诊断错误记录
         function err(m){ msgs.push("ERR:"+m); if(db){ db.textContent = msgs.join(" | "); db.style.color="#f33"; } console.error("[DIAG]", m); }
 
         log("script start");
