@@ -45,7 +45,7 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `⚠️ 安全新闻采集管道 v2 失败 (${new Date().toISOString().slice(0, 10)})`,
+              title: `⚠️ 安全新闻采集管道 v4 失败 (${new Date().toISOString().slice(0, 10)})`,
               body: `今日采集任务执行失败。\n\n[查看日志](${runUrl})\n\n可能原因：Google News RSS 不可达 / Gist Token 过期 / 依赖安装失败。`,
               labels: ["bug"],
             });

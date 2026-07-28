@@ -478,8 +478,8 @@ async function main() {
     console.log("[提示] 未设置 GIST_TOKEN，将跳过 Gist 操作，仅输出本地文件。");
   }
 
-  // 1. 拉取已有数据
-  const existing = await fetchExistingGist();
+  // 1. 拉取已有数据（仅推送模式下拉 Gist，纯本地测试用空数据）
+  const existing = shouldPush ? await fetchExistingGist() : [];
   console.log(`[现有] ${existing.length} 条`);
 
   // 2. Google News RSS 并行抓取
