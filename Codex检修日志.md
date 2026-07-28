@@ -60,6 +60,17 @@ AIGC:
 - **影响范围**：`scrape-safety-news.js` — `initFromOldGist()` + `writeDisplayFile()`
 - **Commit**: `d3f88e3`
 
+### v4.2.1 交付闭环：scrape-test 对齐 + 主目录同步 + 文档补全
+
+- **scrape-test.js 修复**：GPT 审查发现两处严重 bug → B 合并改为 `topA.filter`（对齐生产，防止塞入超量数据）；`fetchExistingGist` 仅 404 返回空、其余 `throw`（防止静默覆盖历史库）
+- **主目录同步**：此前 GitHub Actions 实际跑的是主目录旧脚本（读 `safety_news.json`，MAX_TOTAL_STORED=60），现已用 v4.2.1 版本覆盖
+- **文档同步**：CHANGELOG / Codex检修日志 / KNOWLEDGE / README 全面更新
+- **手机演示包**：重打 zip + 内部文档同步至最新版
+- **仓库清理**：删除 `.bak` 备份文件和根目录旧版 `生文助手.html`
+- **GitHub Actions 验证**：手动触发 Run #30353331971 → 约 1700 条素材，16 分钟完成，全部通过
+- **Commit**: `fa5c1ac` / `555817c` / `74d0a0a`
+- **影响范围**：脚本、文档、手机演示包、仓库根目录
+
 ---
 
 ## 2026/7/26 v5.6 抓取频率翻倍
