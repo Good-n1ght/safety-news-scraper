@@ -280,6 +280,28 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 - **修复**：`localStorage.removeItem("materials_cache")` → `localStorage.removeItem(MATERIALS_LS_KEY)`；DS_VERSION 从 `"gist-v1"` 升级到 `"gist-v2"` 强制重新触发清空
 - **影响范围**：强安兴企安全园地生文助手.html — fetchTodayMaterials() 数据源版本检测块
 - **Commit**: `989ad9a`
+
+### v4.2.2 交付洁净度清理
+
+- **根因**：仓库残留 8 个 .bak 备份文件（7月20日 Codex 快照），已无保留价值且易误点；workflow 名称和失败通知仍写 v2
+- **修复**：删除全部 .bak 文件（主目录 5 + 手机演示包 3）→ 移至回收站；workflow `name` 和失败通知 title 改为 v4；手机演示包 zip 剔除 .bak 后重新打包
+- **影响范围**：强安系列_手机展示 主目录 + 手机演示包 + .github/workflows/update-safety-news.yml
+- **Commit**: `99659f3`
+
+### v4.2.3 手机演示包同步 + 测试脚本离线 + workflow 通知修正
+
+- **根因**：手机演示包内 index.html / README / 强安视界 / 汇报页 4 个文件与主目录不一致（汇报页仍写"7大安全新闻源"旧口径）；scrape-test.js 无 token 时仍调用 fetchExistingGist() 拉 Gist 导致崩溃；workflow 失败通知 title 还写 v2
+- **修复**：主目录 4 文件强制覆盖同步至手机演示包并重建 zip；scrape-test.js 加判断 `shouldPush ? await fetchExistingGist() : []` 实现纯本地模式；workflow 失败通知 v2 → v4
+- **影响范围**：手机演示包 4 文件 + scrape-test.js + update-safety-news.yml
+- **Commit**: `256586c`
+
+### v4.2.4 调试条 UI 重设计
+
+- **根因**：页面顶部黑底绿字 monospace 调试条（`background:#222;color:#0f0;font:11px monospace`）像代码终端，给领导和用户看显得半成品
+- **修复**：改为浅色琥珀底加载提示条，带旋转图标 + 中文状态（加载中→准备就绪→淡出消失），配色与页面品牌色统一；失败时红底提示"加载失败，请刷新页面重试"
+- **影响范围**：强安兴企安全园地生文助手.html — diagBar HTML + 诊断 JS + @keyframes diagSpin
+- **Commit**: `c7d62e2`
+
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
