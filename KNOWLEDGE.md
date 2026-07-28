@@ -35,7 +35,7 @@ AIGC:
 
 > 写给未来接手此项目的 AI / 开发者：本文档记录完整架构、踩过的坑、扩展方式，读完即可上手修改或新建同类项目。
 >
-> 最后更新：2026-07-18（v4 — 选题日历 + 栏目模板）；2026-07-19（v4.1 — 历史稿件 + 手机适配；v4.2 — CORS 代理迁移）；2026-07-20（v5 — 博查 API 替代 Bing/SCF 代理搜索、getProxy() 废弃、项目目录迁移至 F 盘）；2026-07-23（v5.1 — 30条上限补全 + 质量分排序 + 手动输入去关键词污染）；2026-07-26（v5.6 — 抓取频率翻倍；v5.7 — 关键词 10→20 + 白名单 63→75 + 前端排序恢复质量分降序；v5.8 — 评分阈值 65→55 + 新数据优先 20 个空位 + 白名单 ≥1 测试结论）
+> 最后更新：2026-07-18（v4 — 选题日历 + 栏目模板）；2026-07-19（v4.1 — 历史稿件 + 手机适配；v4.2 — CORS 代理迁移）；2026-07-20（v5 — 博查 API 替代 Bing/SCF 代理搜索、getProxy() 废弃、项目目录迁移至 F 盘）；2026-07-23（v5.1 — 30条上限补全 + 质量分排序 + 手动输入去关键词污染）；2026-07-26（v5.6 — 抓取频率翻倍；v5.7 — 关键词 10→20 + 白名单 63→75 + 前端排序恢复质量分降序；v5.8 — 评分阈值 65→55 + 新数据优先 20 个空位 + 白名单 ≥1 测试结论）；2026-07-28（v4 架构重写 — 双 Gist 分离：Gist A 最新快照 + Gist B 长期展示库 + 综合评分）
 
 ---
 
@@ -82,34 +82,47 @@ AIGC:
 | `window.GIST_TOKEN` | localStorage `gist_token` | GitHub Personal Access Token |
 | `window.GIST_RAW` | 拼接 `https://gist.../raw/drafts.json` | 历史稿件 raw URL |
 
-### 1.1 云端抓取管道（GitHub Actions 定时任务）
+### 1.1 云端抓取管道（GitHub Actions 定时任务，v4 双 Gist 架构）
 
-独立于前端应用的离线数据管道，每日自动抓取安全新闻并推送至 Gist：
+独立于前端应用的离线数据管道，每日 4 次自动抓取安全新闻并推送至两个 Gist：
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  GitHub Actions (.github/workflows/scrape.yml)           │
+│  GitHub Actions (.github/workflows/update-safety-news.yml)│
 │                                                           │
-│  定时触发 (schedule: cron 0 0 * * *)   ← UTC 00:00       │
-│     │                                                     │
+│  定时触发 (cron: 0 23,5,11,17 * * *)  ← UTC，即北京时间    │
+│     │                 07:00 / 13:00 / 19:00 / 01:00       │
 │     ▼                                                     │
 │  ① Node.js 脚本 (scripts/scrape-safety-news.js)           │
-│     ├─ Bing 搜索 7 大安全新闻源                           │
-│     ├─ cheerio 解析 HTML / 提取标题+摘要+正文             │
-│     ├─ 去重 + 分类 + 打标（保留 500 字正文摘要）          │
-│     └─ 输出 JSON → 写入 Gist (GIST_TOKEN 认证)            │
+│     ├─ Google News RSS（20 关键词并行发现当天新闻）        │
+│     ├─ 官方站点 Bing site: 搜索（cheerio 解析，权威兜底） │
+│     ├─ 综合评分排序（compositeScore = 质量分 × 时间衰减） │
+│     │                                                     │
+│     ├─ → Gist A（最新快照）: safety_news_latest.json       │
+│     │   每次覆盖写入，最多 30 条                            │
+│     │                                                     │
+│     └─ → Gist B（长期展示库）: safety_news_display.json   │
+│         与上一轮合并去重，累计上限 100 条                   │
+│         首次运行时自动从旧文件 safety_news.json 迁移历史数据│
 │                                                           │
 │  ② 失败告警                                               │
 │     └─ if: failure() → actions/create-issue              │
 │                                                           │
 │  ③ 前端消费                                               │
-│     └─ index.html fetch Gist raw URL → localStorage 缓存  │
+│     └─ 前端只读 Gist B Raw URL → localStorage 缓存 100 条 │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**链路说明**：Node.js 脚本 → Bing 搜索 → cheerio 解析 HTML → 去重分类打标 → Gist 推送（`GIST_TOKEN` 认证）→ 前端 `fetch` Gist Raw URL → `localStorage` 30 天缓存
+**双 Gist 职责分离**：
 
-**定时机制**：GitHub Actions `schedule` 触发，`cron: "0 0 * * *"`（UTC 00:00，即北京时间 08:00），每日一次。
+| Gist | 文件 | 写入方式 | 上限 | 用途 |
+|------|------|----------|------|------|
+| Gist A | `safety_news_latest.json` | 每次覆盖 | 30 条 | 运维查看最新一轮抓取结果 |
+| Gist B | `safety_news_display.json` | 合并去重追加 | 100 条 | 前端唯一数据源，长期累积 |
+
+**旧数据迁移**：旧文件 `safety_news.json` 仅在 B 为空时首次运行 `initFromOldGist()` 读取一次并写入 B，之后不再使用。404 视为正常（旧文件可能已不存在），网络异常 / 429 / JSON 解析失败则 throw 防止静默丢失。
+
+**定时机制**：GitHub Actions `schedule` 触发，每天 4 次（07:00 / 13:00 / 19:00 / 01:00 北京时间），6 小时间隔。
 
 **所需密钥**：
 
@@ -196,25 +209,21 @@ AIGC:
 
 **已知问题**：无法区分正文和导航/页脚。某些网站正文在 JS 动态加载中（无法抓到）。某些网站反爬返回验证码页面。
 
-### 2.4 素材库（Gist + localStorage 缓存，30条上限）
+### 2.4 素材库（双 Gist 架构 + localStorage 缓存，100 条上限）
 
-**数据来源**：
-- **热数据**：GitHub Gist → `https://gist.githubusercontent.com/Good-n1ght/360b3e9ec81bfee6765883cbb0da7aec/raw/safety_news.json`
+**数据来源（v4 双 Gist 架构）**：
+- **Gist A（最新快照）**：`safety_news_latest.json`，每次抓取覆盖写入，最多 30 条，仅供运维查看
+- **Gist B（长期展示库）**：`safety_news_display.json`，每轮合并去重追加，上限 100 条，前端唯一数据源
+- **旧数据迁移**：`safety_news.json`（旧架构产物，30 条）仅在 B 为空时首次运行自动迁移
+- **Raw URL**：`https://gist.githubusercontent.com/Good-n1ght/156bb6326a83056a148b8cbd175ff463/raw/safety_news_display.json`
 - **缓存**：localStorage `huanxing_materials_cache_v{N}`（版本号控制清缓存），有效期 30 天
-- **上限**：采集脚本 `MAX_TOTAL_STORED=30`，前端合并逻辑 `MAX_LOCAL_STORED=30`，双重截断（2026-07-23 补全，此前仅脚本有上限）
-- **排序**：新增置顶 → 日期降序（2026-07-25 v5.5 从质量分降序改为日期降序，非新增素材严格按发布日期从新到旧排列）
+- **上限**：前端 MAX_MATERIALS = 100，云端 Gist B MAX_DISPLAY_STORED = 100
+- **排序**：新增置顶 → 日期降序
 
-**为什么用 Gist**：
-- 免费、无需服务器
-- 通过 Raw URL 直接获取 JSON，无 CORS 限制
-- 版本历史可追溯
-
-**为什么不用数据库**：不需要后端，零构建静态部署原则。
-
-**数据管道**（独立于本项目的定时脚本）：
-- 定时抓取 7 站 + 新增站
-- 去重、分类、存 Gist
-- 本应用只负责读取 + 前端缓存
+**为什么双 Gist**：
+- v3 中 Gist A 和 Gist B 都是"仓库"，概念混乱——A 每次新增进去，B 也是累积，用户不知道哪个是权威数据源
+- v4 明确分工：A 只是每次抓取结果的快照（覆盖写入），B 是真正的前端数据仓库（合并累积）
+- 前端只读 B，架构清晰：A 是"今天抓到了什么"，B 是"素材库里有什么"
 
 ### 2.5 AI 生成（callDeepSeekDraft）
 

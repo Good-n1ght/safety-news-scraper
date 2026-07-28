@@ -1,21 +1,17 @@
 ﻿/**
- * scrape-safety-news.js — 安全园地素材自动采集管道 v2
+ * scrape-test.js — 安全园地素材采集管道本地测试 v4
  * 
- * 三层数据源:
- *  1. Google News RSS（多关键词并行，快速发现当天新闻）
- *  2. 官方站点 Bing site: 搜索（cheerio 解析，权威兜底）
- *  3. fallback_materials.json（本地精选素材，防空洞）
+ * 完全对齐 scrape-safety-news.js v4 双 Gist 架构：
+ *  Gist A（最新快照）: safety_news_latest.json，每次覆盖写入
+ *  Gist B（长期展示库）: safety_news_display.json，合并去重
  * 
- * 流程:
- *  1. 从 Gist 拉取已有素材
- *  2. Google News RSS 抓取（GitHub Actions 海外环境可直连）
- *  3. Bing site: 搜索官方源
- *  4. 正文抓取 + 打分 + 分类 + 过滤
- *  5. 合并去重 → 截断至 30 条 → 推回 Gist
- *  6. 若当日新增不足 5 条，从 fallback 补充
+ * 测试模式默认不推送 Gist，写入本地文件：
+ *  - test_a.json：模拟 Gist A 快照
+ *  - test_b.json：模拟 Gist B 长期展示库
  * 
- * GitHub Actions 每天 07:30 / 15:30（北京时间）触发。
- * 需要仓库 Secrets: GIST_TOKEN
+ * 如需真实推送 Gist A/B，设置环境变量 GIST_TOKEN 并传参 --push。
+ * 用法: node scrape-test.js         → 仅本地测试
+ *       node scrape-test.js --push  → 本地测试 + 推送 A/B 双 Gist
  */
 
 import * as cheerio from "cheerio";
@@ -26,13 +22,19 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// ========== 配置 ==========
+// ========== 双 Gist 配置 ==========
+// Gist A（最新快照）
+const GIST_A_ID = "360b3e9ec81bfee6765883cbb0da7aec";
+const GIST_A_FILENAME = "safety_news_latest.json";
+const GIST_A_API_URL = `https://api.github.com/gists/${GIST_A_ID}`;
+
+// Gist B（长期展示库）
 const GIST_ID = "156bb6326a83056a148b8cbd175ff463";
 const GIST_FILENAME = "safety_news_display.json";
 const GIST_RAW_URL = `https://gist.githubusercontent.com/Good-n1ght/${GIST_ID}/raw/${GIST_FILENAME}`;
 const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
 
-const MAX_TOTAL_STORED = 30;
+const MAX_TOTAL_STORED = 100;
 const FETCH_TIMEOUT_MS = 12000;
 const MAX_CONTENT_CHARS = 6000;
 const MAX_STORED_CHARS = 500;
@@ -98,13 +100,6 @@ const SCORE_RULES = {
     return score;
   },
 
-  // 时间加分
-  timeBonus: (publishedAt) => {
-    if (!publishedAt) return 0;
-    const days = (Date.now() - new Date(publishedAt).getTime()) / 86400000;
-    return days <= 7 ? 10 : 0;
-  },
-
   // 降权/剔除关键词
   penaltyKeywords: [
     "国际安全", "网络安全", "金融安全", "粮食安全", "铁路投资",
@@ -135,6 +130,19 @@ const SAFETY_WHITELIST = [
   "安全文化", "班组", "健康饮食", "科普", "职工健康", "心理健康",
 ];
 
+// ========== 时间衰减 + 综合评分（对齐生产脚本） ==========
+function calcTimeDecay(publishedAt) {
+  if (!publishedAt) return 0.5;
+  const days = (Date.now() - new Date(publishedAt).getTime()) / 86400000;
+  return 1 / (1 + 0.03 * days);
+}
+
+function calcCompositeScore(item) {
+  const qualityScore = item.score || 0;
+  const decay = calcTimeDecay(item.publishedAt);
+  return qualityScore * decay;
+}
+
 function isSafetyRelated(title, summary) {
   const text = title + " " + summary;
   // 按关键词长度降序，避免短词吃掉长词子串
@@ -148,7 +156,7 @@ function isSafetyRelated(title, summary) {
       remaining = remaining.substring(0, idx) + " ".repeat(kw.length) + remaining.substring(idx + kw.length);
     }
   }
-  return count >= 1;
+  return count >= 2;
 }
 
 function hasPenaltyKeywords(text) {
@@ -162,7 +170,6 @@ function calculateScore(item) {
   score += SCORE_RULES.sourceBonus(item.source);
   score += SCORE_RULES.titleBonus(item.title);
   score += SCORE_RULES.summaryBonus(item.summary);
-  score += SCORE_RULES.timeBonus(item.publishedAt);
   return Math.min(100, score);
 }
 
@@ -351,6 +358,7 @@ function enrichItem(item) {
   item.id = `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   // 保留 500 字正文摘要
   item.content = (item.content || item.summary || "").substring(0, MAX_STORED_CHARS);
+  item.compositeScore = calcCompositeScore(item);
   return item;
 }
 
@@ -360,15 +368,49 @@ async function fetchExistingGist() {
   try {
     const resp = await fetch(`${GIST_RAW_URL}?_t=${Date.now()}`);
     if (!resp.ok) {
-      console.warn(`[Gist] 拉取失败 HTTP ${resp.status}，视为空数据`);
-      return [];
+      // 只有 404 才允许返回空数据（Gist 不存在是正常的初始化场景）
+      if (resp.status === 404) {
+        console.warn("[Gist] 404 未找到，视为空数据（首次初始化）");
+        return [];
+      }
+      throw new Error(`Gist 拉取失败: HTTP ${resp.status}`);
     }
     const data = await resp.json();
     return data.items || [];
   } catch (err) {
-    console.warn(`[Gist] 拉取异常: ${err.message}，视为空数据`);
-    return [];
+    // 非 404 异常一律 throw，禁止静默覆盖 B 历史库
+    throw new Error(`Gist 拉取异常: ${err.message}`);
   }
+}
+
+async function updateGistA(token, items) {
+  console.log(`[Gist A] 推送 ${items.length} 条（覆盖）...`);
+  const body = JSON.stringify({
+    files: {
+      [GIST_A_FILENAME]: {
+        content: JSON.stringify({ items, updatedAt: new Date().toISOString() }, null, 2),
+      },
+    },
+  });
+
+  const resp = await fetch(GIST_A_API_URL, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "User-Agent": "safety-news-scraper/4.0",
+    },
+    body,
+  });
+
+  if (!resp.ok) {
+    const errBody = await resp.text();
+    throw new Error(`Gist A 更新失败: HTTP ${resp.status} — ${errBody}`);
+  }
+
+  const result = await resp.json();
+  console.log(`[Gist A] 推送成功 → ${result.html_url}`);
 }
 
 async function updateGist(token, items) {
@@ -387,7 +429,7 @@ async function updateGist(token, items) {
       "Authorization": `Bearer ${token}`,
       "Accept": "application/vnd.github+json",
       "Content-Type": "application/json",
-      "User-Agent": "safety-news-scraper/2.0",
+      "User-Agent": "safety-news-scraper/4.0",
     },
     body,
   });
@@ -421,13 +463,20 @@ function loadFallbackMaterials() {
 
 // ========== 主流程 ==========
 async function main() {
+  const args = process.argv.slice(2);
+  const shouldPush = args.includes("--push");
+
   const token = process.env.GIST_TOKEN;
-  if (!token) {
-    console.error("缺少 GIST_TOKEN 环境变量。请在仓库 Settings → Secrets → Actions 添加。");
+  if (shouldPush && !token) {
+    console.error("--push 模式需要 GIST_TOKEN 环境变量。");
     process.exit(1);
   }
 
-  console.log(`=== 安全新闻采集管道 v2 (${new Date().toISOString()}) ===`);
+  console.log(`=== 安全新闻采集管道 v4 测试 (${new Date().toISOString()}) ===`);
+  console.log(`模式: ${shouldPush ? "推送 A/B 双 Gist" : "本地测试（写 test_a.json / test_b.json）"}`);
+  if (!token) {
+    console.log("[提示] 未设置 GIST_TOKEN，将跳过 Gist 操作，仅输出本地文件。");
+  }
 
   // 1. 拉取已有数据
   const existing = await fetchExistingGist();
@@ -483,18 +532,19 @@ async function main() {
     await sleep(1000);
   }
 
-  // 6. 打分 + 分类 + 过滤
-  const enriched = uniqueResults.map(enrichItem).filter((item) => item.score >= 65);
-  enriched.sort((a, b) => (b.score || 0) - (a.score || 0));
-  console.log(`[打分过滤后] ${enriched.length} 条 (≥65分)`);
+  // 6. 打分 + 分类 + 过滤（对齐生产：仅安全相关性 + 降权词过滤，无硬阈值）
+  const enriched = uniqueResults.map(enrichItem).filter((item) => item.score >= 0);
+  // 按 compositeScore 降序
+  enriched.sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0));
+  console.log(`[安全过滤后] ${enriched.length} 条`);
 
   // 分数分布
   const dist = {};
   enriched.forEach((i) => {
-    const band = i.score >= 80 ? "80+优先" : "65-79正常";
+    const band = i.compositeScore >= 70 ? "70+ 高置信" : i.compositeScore >= 50 ? "50-69 中等" : "50- 低分";
     dist[band] = (dist[band] || 0) + 1;
   });
-  console.log(`分数分布: ${JSON.stringify(dist)}`);
+  console.log(`综合分分布: ${JSON.stringify(dist)}`);
 
   // 7. 检查当日新增是否足够，不够从 fallback 补充
   let todayNewCount = enriched.filter((i) => i.publishedAt === todayISO).length;
@@ -524,40 +574,58 @@ async function main() {
     console.log(`[Fallback] 补充 ${toAdd.length} 条`);
   }
 
-  // 8. 与已有数据合并去重
+  // 8. 写入 Gist A（最新快照）：按 compositeScore 取 Top-30，直接覆盖
+  const MAX_TOP_N = 30;
+  const topA = enriched.slice(0, MAX_TOP_N);
+  console.log(`\n[Gist A 快照] Top-${MAX_TOP_N} 条`);
+  topA.forEach((item, i) => {
+    console.log(`  ${i + 1}. [${(item.compositeScore || 0).toFixed(1)}] ${item.title}`);
+  });
+
+  // 9. 与 Gist B 已有数据合并去重（只合并 A 的 Top-30，不是全部 enriched）
   const normalizeTitle = (t) => (t || "").replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, "").toLowerCase().substring(0, 20);
   const existingTitles = new Set(existing.map((e) => normalizeTitle(e.title)));
-  const freshItems = enriched.filter((item) => !existingTitles.has(normalizeTitle(item.title)));
+  const freshItems = topA.filter((item) => !existingTitles.has(normalizeTitle(item.title)));
 
-  console.log(`\n[合并] 新增 ${freshItems.length} 条，已有 ${existing.length} 条`);
+  console.log(`\n[合并] 新增 ${freshItems.length} 条，B 库已有 ${existing.length} 条`);
 
-  // 9. 合并 + 按质量分降序（同分按日期降序）
-  const merged = [...freshItems, ...existing];
-  merged.sort((a, b) => {
-    const scoreDiff = (b.score || 0) - (a.score || 0);
-    if (scoreDiff !== 0) return scoreDiff;
-    return (b.publishedAt || "").localeCompare(a.publishedAt || "");
-  });
-  const final = merged.slice(0, MAX_TOTAL_STORED);
+  // 合并 + 按 compositeScore 降序
+  const mergedB = [...freshItems, ...existing];
+  mergedB.sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0));
+  const finalB = mergedB.slice(0, MAX_TOTAL_STORED);
 
-  // 10. 推送 Gist（测试模式：注释掉，改为写入本地文件）
-  // await updateGist(token, final);
+  // 10. 输出本地文件
   const fsSync = await import("fs");
   const __testDir = new URL(".", import.meta.url).pathname;
   fsSync.writeFileSync(
-    __testDir + "test_result.json",
-    JSON.stringify({ items: final, updatedAt: new Date().toISOString() }, null, 2),
+    __testDir + "test_a.json",
+    JSON.stringify({ items: topA, updatedAt: new Date().toISOString() }, null, 2),
     "utf-8"
   );
-  console.log("[测试] 结果已写入 test_result.json");
+  fsSync.writeFileSync(
+    __testDir + "test_b.json",
+    JSON.stringify({ items: finalB, updatedAt: new Date().toISOString() }, null, 2),
+    "utf-8"
+  );
+  console.log("[测试] A 快照 → test_a.json");
+  console.log("[测试] B 展示库 → test_b.json");
 
-  // 11. 输出摘要
+  // 11. 可选：推送真实 Gist
+  if (shouldPush && token) {
+    console.log("\n--- 推送 Gist A（最新快照） ---");
+    await updateGistA(token, topA);
+    console.log("--- 推送 Gist B（长期展示库） ---");
+    await updateGist(token, finalB);
+  }
+
+  // 12. 输出摘要
   console.log(`\n=== 执行摘要 ===`);
-  console.log(`总素材: ${final.length} 条`);
+  console.log(`Gist A 快照: ${topA.length} 条`);
+  console.log(`Gist B 展示库: ${finalB.length} 条`);
   console.log(`本次新增: ${freshItems.length} 条`);
   console.log(`来源分布: Google News ${gnResults.length} | 官方 ${officialResults.length} | Fallback ${todayNewCount < MIN_DAILY_TARGET ? "已补充" : "未触发"}`);
   const catCounts = {};
-  final.forEach((i) => { catCounts[i.category] = (catCounts[i.category] || 0) + 1; });
+  finalB.forEach((i) => { catCounts[i.category] = (catCounts[i.category] || 0) + 1; });
   console.log(`分类分布: ${JSON.stringify(catCounts)}`);
   console.log(`完成时间: ${new Date().toISOString()}`);
 }

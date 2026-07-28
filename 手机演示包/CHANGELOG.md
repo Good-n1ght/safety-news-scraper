@@ -2,6 +2,17 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: 1d901ace6510f3f7162dab4a93f6993e_50ca1a53889811f1a68c525400826444
+    ReservedCode1: +wXzpkkzC8S0y2e8p/tD75jKXUGCHkMji+c9CLzG15T6syLoIxcAoNZJWUwEGgj3S6iWoXV/Mmu7w7PhUrQuvc0jM6FS/upl4i7htZDRuQ2n5jWhg2LwTB0jC+bkxXVYwoqFwbtAx4mYn03/E1usx4Q6TdVyM9mof9uhF1SLMHAnlvEgCaHEGFeU0ek=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: 1d901ace6510f3f7162dab4a93f6993e_50ca1a53889811f1a68c525400826444
+    ReservedCode2: +wXzpkkzC8S0y2e8p/tD75jKXUGCHkMji+c9CLzG15T6syLoIxcAoNZJWUwEGgj3S6iWoXV/Mmu7w7PhUrQuvc0jM6FS/upl4i7htZDRuQ2n5jWhg2LwTB0jC+bkxXVYwoqFwbtAx4mYn03/E1usx4Q6TdVyM9mof9uhF1SLMHAnlvEgCaHEGFeU0ek=
+---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
     ProduceID: 1d901ace6510f3f7162dab4a93f6993e_a7d8ae9e87de11f1a68c525400826444
     ReservedCode1: MdXRpbU0nIOy5S3Vg49Nuf9mXecI9fRndAGr7n4qWBhpoocmp/K49cw0mBqUBXgG0P5Rd6u7I8vb8aQgEd7X8slzsKLAHh3tydL50tJmQZ9oTxr14x+XGbI4QJPIZOF9c5CPhplNlfLvF40fzA3GMbt0mrssa3mKKiVGZ1sRSD5KYECFQmTFbXiHEM0=
     ContentPropagator: 001191440300708461136T1XGW3
@@ -23,6 +34,38 @@ AIGC:
 # 强安系列 — 完整检修日志
 
 > 按时间倒序排列。每条记录包含：日期、操作人、修改内容、影响范围。
+
+---
+
+## 2026-07-28 — v4 架构重写：双 Gist 分离（GPT 方案）
+
+### Gist A 改为最新快照（覆盖写入），Gist B 独立为长期展示库
+- **日期**：2026-07-28
+- **操作人**：Marvis（方案：GPT）
+- **修改内容**：`scrape-safety-news.js` 完全重写架构：
+  - **Gist A**（`safety_news_latest.json`）：每次抓取直接覆盖写入，最多 30 条，只保留最新一轮结果，不再做"仓库"累积
+  - **Gist B**（`safety_news_display.json`）：长期展示库，每轮与前一轮合并去重，滚动累积上限 100 条
+  - **旧文件迁移**：`safety_news.json`（30 条旧数据）仅在 B 为空时首次运行 initFromOldGist() 自动迁移到 B，之后不再读取
+  - **前端对接**：前端只读 Gist B（GIST_RAW 已指向 `safety_news_display.json`），Gist A 仅供运维查看
+- **核心改进**：解决 v3 中"A 也是仓库、B 也是仓库"的概念混乱。A 职责单一化为"最新采集快照"，B 是前端唯一数据源。采购素材不会永远丢失在旧 Gist A 的快照里
+- **Commit**: `905b2cd`
+- **影响范围**：采集脚本 `scrape-safety-news.js`、GitHub Actions workflow、前端 HTML（GIST_RAW URL 更新）
+
+### v4.1：initFromOldGist 异常区分 + 写 B 双重保护
+- **日期**：2026-07-28
+- **操作人**：Marvis
+- **修改内容**：
+  - `initFromOldGist()` 区分错误类型：404 → `return []`（旧文件不存在是正常情况）；网络异常 / 429 / JSON 解析失败 → `throw`（不应静默丢失迁移机会）
+  - 写 B 前双重保护：`existingB.length > 0 && finalB.length === 0` → 拒绝覆盖（防止已有数据被写成空库）；`topN.length === 0 && existingB.length === 0` → 拒绝初始化（防止建空库）
+- **核心改进**：GPT 复查发现的边界风险——旧文件因网络抖动读取失败时，v4 原逻辑静默返回空数组，永久丢失 30 条历史数据；双重保护防止 Gist API 异常导致 B 被清空
+- **Commit**: `d3f88e3`
+- **影响范围**：采集脚本 `scrape-safety-news.js` — initFromOldGist() + writeDisplayFile()
+
+### 综合评分替代简单阈值排序
+- **日期**：2026-07-28
+- **操作人**：Marvis
+- **修改内容**：评分逻辑从"质量分 → ≥55 阈值 → 截断"改为"综合分 = 质量分 × 时间衰减（时间越近分数越高）"，GitHub Actions 海外环境抓 Google News 在时效性上有天然优势
+- **影响范围**：采集脚本 `scrape-safety-news.js` — `compositeScore` / `timeDecay` 计算
 
 ---
 
@@ -62,6 +105,29 @@ AIGC:
 
 ### 白名单匹配阈值保持不变
 - 白名单匹配阈值保持 ≥2 不变，不因关键词扩展而降低过滤门槛
+
+---
+
+## 2026-07-26 — v5.8 评分门槛下调 + 新数据优先机制
+
+### 评分最低阈值从 65 分下调至 55 分
+- **日期**：2026-07-26
+- **操作人**：Marvis
+- **修改内容**：采集脚本打分过滤阈值从 ≥65 下调至 ≥55，新增 `MIN_SCORE` 常量（55）
+- **核心改进**：v5.7 测试表明健康类等内容质量分普遍偏低，≥65 门槛将其过滤在外；下调至 55 让其有机会进入候选池
+- **影响范围**：采集脚本 `scrape-safety-news.js` — `enrichItem` 过滤阶段
+
+### 累积模式：新数据优先 + 旧数据补满 30 条
+- **日期**：2026-07-26
+- **操作人**：Marvis
+- **修改内容**：合并逻辑从「新旧混排 → 按分数截断 30」改为「本轮新增全部排前面 + 旧数据补满剩余空位至 30」
+- **核心改进**：Gist 作为前端数据源需保持累积，旧版纯增量在无抓取轮次会退化为 0 条；累积模式下始终满 30 条，新数据优先展示
+- **日志输出**：「本轮新增 X 条 + 旧数据 Y 条 = Z 条」，可追踪新旧比例
+- **影响范围**：采集脚本 `scrape-safety-news.js` — 合并截断阶段
+
+### test 分支白名单阈值 ≥1 测试结论
+- 白名单阈值 ≥2 → ≥1 无明显效果，瓶颈不在白名单而在打分排序阶段
+- 降阈后健康类内容仍未进入 top 30，需从搜索词召回和打分偏好入手
 
 ---
 
@@ -129,11 +195,11 @@ AIGC:
 
 ---
 
-## 2026-07-25 — 150条滚动积累 + 绿色「新增」标记 + normalizeAndCapMaterials 封死漏网口
+## 2026-07-25 — 30条上限 + 绿色「新增」标记 + normalizeAndCapMaterials 封死漏网口
 
-### 本地素材库从 30 条硬砍改为 150 条滚动积累
+### 本地素材库保持 30 条上限
 - **问题**：30 条上限一刀切，Google News 每天增量小但长期积累下来老素材会陆续被砍，本地库始终偏浅
-- **修复**：`MAX_LOCAL_STORED` 从 30 放宽到 150；`normalizeAndCapMaterials` 改为"新增优先 + 质量分降序"滚动淘汰
+- **修复**：`MAX_LOCAL_STORED` 保持 30；`normalizeAndCapMaterials` 改为"新增优先 + 质量分降序"滚动淘汰
 - **影响范围**：三个 HTML 的 `normalizeAndCapMaterials` / `mergeLocalMaterials`
 
 ### 绿色「新增」badge 标记
@@ -562,5 +628,6 @@ AIGC:
 ---
 
 > 最后更新：2026-07-21
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

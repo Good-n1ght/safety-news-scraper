@@ -43,6 +43,25 @@ AIGC:
 ---
 
 
+## 2026/7/28 v4 双 Gist 架构重写（GPT 方案）
+
+- **方案来源**：GPT 审计 v3 代码后指出"Gist A 也是仓库"概念混乱，提出新架构
+- **Gist A（最新快照）**：`safety_news_latest.json`，每次抓取直接覆盖写入，最多 30 条，只保留最新一轮结果
+- **Gist B（长期展示库）**：`safety_news_display.json`，每轮合并去重，滚动累积上限 100 条，前端唯一数据源
+- **旧文件迁移**：`safety_news.json`（30 条旧数据）仅在 B 为空时首次运行自动迁移，之后不再读取
+- **综合评分**：`compositeScore = qualityScore × timeDecay`，时效性好的素材优先展示
+- **影响范围**：`scrape-safety-news.js` 完全重写（710 行）、`scrape-test.js` 同步更新、`update-safety-news.yml` workflow 配置更新
+- **Commit**: `905b2cd`
+
+### v4.1 边界保护修复
+
+- **initFromOldGist 风险修复**：GPT 复查发现旧文件读取失败时静默返回 [] 会永久丢失历史数据 → 改为 404 返回空 + 其他异常 throw
+- **写 B 双重保护**：B 有数据不能写成 0 条（防覆盖）；topN 和 B 同时为空禁止初始化（防建空库）
+- **影响范围**：`scrape-safety-news.js` — `initFromOldGist()` + `writeDisplayFile()`
+- **Commit**: `d3f88e3`
+
+---
+
 ## 2026/7/26 v5.6 抓取频率翻倍
 
 - **GitHub Actions 抓取频率**：从每天 2 次（07:30/15:30 北京时间）改为每天 4 次（07:00/13:00/19:00/01:00 北京时间）
@@ -84,16 +103,6 @@ AIGC:
 - **影响文件**：强安兴企安全园地生文助手.html、手机演示包/强安兴企安全园地生文助手.html、手机演示包.zip、CHANGELOG.md
 - **Commit**: 5363789
 - **效果**：用户无需手动清 localStorage，下次打开页面自动显示 30 条。
-
----
-
-## 2026/7/27 v6.0 双 Gist 架构 + 综合评分
-
-- **双 Gist 架构**：采集池（Gist A，360b3e9e）与展示库（Gist B，156bb632）分离，前者供调试，后者上限 100 条供前端读取
-- **综合评分**：finalScore = 质量分 × 时间衰减系数（≤3天×1.0 / 3-7天×0.8 / 7-14天×0.6 / 14-30天×0.4 / >30天丢弃），兼顾时效与质量
-- **管道流程重写**：打分 → 时间衰减 → 30天过滤 → 精选 Top-30 → 合并入 Gist B → 上限 100
-- **前端切换**：三份 HTML 的 Gist URL 从 A 切到 B，DS_VERSION 升至 gist-v6
-- **影响范围**：`scrape-safety-news.js`（主流程重写）、三份 HTML（Gist URL + DS_VERSION）
 
 ---
 

@@ -37,6 +37,38 @@ AIGC:
 
 ---
 
+## 2026-07-28 — v4 架构重写：双 Gist 分离（GPT 方案）
+
+### Gist A 改为最新快照（覆盖写入），Gist B 独立为长期展示库
+- **日期**：2026-07-28
+- **操作人**：Marvis（方案：GPT）
+- **修改内容**：`scrape-safety-news.js` 完全重写架构：
+  - **Gist A**（`safety_news_latest.json`）：每次抓取直接覆盖写入，最多 30 条，只保留最新一轮结果，不再做"仓库"累积
+  - **Gist B**（`safety_news_display.json`）：长期展示库，每轮与前一轮合并去重，滚动累积上限 100 条
+  - **旧文件迁移**：`safety_news.json`（30 条旧数据）仅在 B 为空时首次运行 initFromOldGist() 自动迁移到 B，之后不再读取
+  - **前端对接**：前端只读 Gist B（GIST_RAW 已指向 `safety_news_display.json`），Gist A 仅供运维查看
+- **核心改进**：解决 v3 中"A 也是仓库、B 也是仓库"的概念混乱。A 职责单一化为"最新采集快照"，B 是前端唯一数据源。采购素材不会永远丢失在旧 Gist A 的快照里
+- **Commit**: `905b2cd`
+- **影响范围**：采集脚本 `scrape-safety-news.js`、GitHub Actions workflow、前端 HTML（GIST_RAW URL 更新）
+
+### v4.1：initFromOldGist 异常区分 + 写 B 双重保护
+- **日期**：2026-07-28
+- **操作人**：Marvis
+- **修改内容**：
+  - `initFromOldGist()` 区分错误类型：404 → `return []`（旧文件不存在是正常情况）；网络异常 / 429 / JSON 解析失败 → `throw`（不应静默丢失迁移机会）
+  - 写 B 前双重保护：`existingB.length > 0 && finalB.length === 0` → 拒绝覆盖（防止已有数据被写成空库）；`topN.length === 0 && existingB.length === 0` → 拒绝初始化（防止建空库）
+- **核心改进**：GPT 复查发现的边界风险——旧文件因网络抖动读取失败时，v4 原逻辑静默返回空数组，永久丢失 30 条历史数据；双重保护防止 Gist API 异常导致 B 被清空
+- **Commit**: `d3f88e3`
+- **影响范围**：采集脚本 `scrape-safety-news.js` — initFromOldGist() + writeDisplayFile()
+
+### 综合评分替代简单阈值排序
+- **日期**：2026-07-28
+- **操作人**：Marvis
+- **修改内容**：评分逻辑从"质量分 → ≥55 阈值 → 截断"改为"综合分 = 质量分 × 时间衰减（时间越近分数越高）"，GitHub Actions 海外环境抓 Google News 在时效性上有天然优势
+- **影响范围**：采集脚本 `scrape-safety-news.js` — `compositeScore` / `timeDecay` 计算
+
+---
+
 ## 2026-07-26 — v5.6 抓取频率翻倍
 
 ### GitHub Actions 抓取频率从每天 2 次升级为 4 次
@@ -96,30 +128,6 @@ AIGC:
 ### test 分支白名单阈值 ≥1 测试结论
 - 白名单阈值 ≥2 → ≥1 无明显效果，瓶颈不在白名单而在打分排序阶段
 - 降阈后健康类内容仍未进入 top 30，需从搜索词召回和打分偏好入手
-
----
-
-## 2026-07-27 — v6.0 双 Gist 架构 + 综合评分（质量分×时间衰减）
-
-### 双 Gist 架构
-- **背景**：管道脚本与前端共享同一个 Gist，管道 `MAX_TOTAL_STORED=30` 硬截断，前端设 100 条上限形同虚设
-- **方案**：采集池（Gist A）+ 展示库（Gist B）分离
-  - Gist A（`360b3e9ec81bfee6765883cbb0da7aec`）：保留用于去重和调试，上限 60 条
-  - Gist B（`156bb6326a83056a148b8cbd175ff463`）：展示库，前端读取，上限 100 条
-- **影响范围**：管道脚本、三份 HTML 前端
-
-### 综合评分系统
-- **公式**：finalScore = 质量分 × 时间衰减系数
-  - ≤3 天：×1.0 / 3~7 天：×0.8 / 7~14 天：×0.6 / 14~30 天：×0.4 / >30 天：丢弃
-- **效果**：时效与质量并重，不再出现半年前的老新闻靠高分赖着不走
-- **流水线**：精选 Top-30（按 finalScore 排序）→ 合并到展示库 Gist B → 上限 100
-
-### 前端切换
-- Gist URL 从 A 切到 B，DS_VERSION 升至 gist-v6，强制清空旧缓存
-- 三份入口 HTML 全部同步更新
-
-### Commit
-- 待 push
 
 ---
 
@@ -619,7 +627,7 @@ AIGC:
 
 ---
 
-> 最后更新：2026-07-27
+> 最后更新：2026-07-21
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

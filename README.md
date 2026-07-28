@@ -41,7 +41,7 @@
 - **Gist Token 管理**：GitHub Token 存在浏览器 localStorage，换设备需重新填写。历史稿件通过前端直接调用 GitHub Gist API 保存（PATCH drafts.json），无需中转服务
 - **模型 API 路径不统一**：DeepSeek 用 `/v1/chat/completions`，GLM 用 `/api/paas/v4/chat/completions`，新模型需要手动适配 `chatEndpoint`
 - **extensions/ 运行时依赖**：`hooks.js` 和 `config.js` 是页面运行必需文件，缺失会导致白屏。发布/演示时需确保完整复制
-- **C 盘 source/repos 已废弃**：项目唯一活跃目录为 F 盘 `safety-news-scraper-online/`，C 盘旧目录请忽略
+- **C 盘 source/repos 已废弃**：项目唯一活跃目录为 F 盘 `强安系列_手机展示/`，C 盘旧目录请忽略
 - **自建代理路线已放弃**：SCF 代理 v1/v2/v3 均以崩溃告终。v5 起搜索改用博查 API，全文抓取改为直接 fetch，不再维护任何自建 CORS 代理
 
 ## 技术栈
@@ -67,39 +67,27 @@
 | 生文助手 | `强安兴企安全园地生文助手.html` | 联网搜索 + AI 生成安全宣教图文草稿 |
 | 强安视界 | `强安视界_UI改版.html` | 安全新闻聚合阅读器，实时抓取头条/百度/Bing |
 | 产品介绍 | `强安系列产品介绍_汇报页.html` | 产品体系汇报展示页 |
-| GitHub Pages | [good-n1ght.github.io/safety-news-scraper](https://good-n1ght.github.io/safety-news-scraper) | 生文助手在线版 |
+| GitHub Pages | [good-n1ght.github.io/safety-news-scraper/生文助手.html](https://good-n1ght.github.io/safety-news-scraper/生文助手.html) | 生文助手在线版 |
 
 ## 目录结构
 
 ```
-safety-news-scraper-online/
+强安系列_手机展示/
 ├── 强安兴企安全园地生文助手.html   # 产品1：生文助手（联网搜索 + AI 生成）
 ├── 强安视界_UI改版.html            # 产品2：新闻聚合阅读器
 ├── 强安系列产品介绍_汇报页.html     # 产品介绍汇报页
 ├── index.html                      # 强安视界在线版（部署到 GitHub Pages）
-├── CHANGELOG.md                    # 版本变更日志
-├── README.md                       # 本文件
-├── KNOWLEDGE.md                    # 架构方案与避坑指南
-├── CODE_AUDIT.md                   # 代码审计报告
-├── Codex检修日志.md                # 检修记录
-├── 演示话术.md                     # 演示话术脚本
-├── 手机演示包/                     # 手机端演示压缩包及副本
-│   ├── 强安兴企安全园地生文助手.html
-│   ├── README.md
-│   ├── CHANGELOG.md
-│   ├── KNOWLEDGE.md
-│   ├── Codex检修日志.md
-│   └── 演示话术.md
-├── 手机演示包.zip
-├── .github/workflows/
-│   └── update-safety-news.yml      # 定时采集管道
+├── proxy/
+│   ├── index.js                    # CORS 代理服务（Express）
+│   └── package.json                # 代理依赖
 ├── scripts/
 │   └── scrape-safety-news.js       # GitHub Actions 定时抓取脚本
 ├── extensions/                     # 扩展系统
 │   ├── hooks.js                    # 钩子系统
 │   ├── config.js                   # 外部化配置
 │   └── _template.js                # 扩展模板
-├── proxy/                          # CORS 代理（已废弃）
+├── README.md                       # 本文件
+├── KNOWLEDGE.md                    # 架构方案与避坑指南
 ├── package.json                    # Railway 部署配置
 ├── railway.json                    # Railway 部署配置
 └── Procfile                        # Railway 启动指令
@@ -124,4 +112,3 @@ safety-news-scraper-online/
 | v5.7 | 关键词扩展：Google News 从 10 扩到 20 个 + 白名单从 63 扩到 75 词 + 前端排序恢复质量分降序（新增置顶 → score 降序 → 同分按日期降序） |
 | v5.8 | MAX_MATERIALS 恢复 30 条上限 + 缓存版本 v3→v4 自动清理旧脏数据 + 去除多余的 init 阶段 saveMaterialsToCache |
 | v5.9 | 素材库上限改为 100 条滚动积累，旧素材自然淘汰 |
-| v6.0 | 双 Gist 架构（采集池+展示库分离）、综合评分（质量分×时间衰减）、Top-30 精选推展示库 |
