@@ -67,6 +67,19 @@ AIGC:
 - **修改内容**：评分逻辑从"质量分 → ≥55 阈值 → 截断"改为"综合分 = 质量分 × 时间衰减（时间越近分数越高）"，GitHub Actions 海外环境抓 Google News 在时效性上有天然优势
 - **影响范围**：采集脚本 `scrape-safety-news.js` — `compositeScore` / `timeDecay` 计算
 
+### v4.2.1：scrape-test.js 对齐生产 + 文档同步 + 交付闭环
+- **日期**：2026-07-28
+- **操作人**：Marvis
+- **修改内容**：
+  - `scrape-test.js`：B 合并改为 `topA.filter`（对齐生产逻辑）；`fetchExistingGist` 仅 404 返回空、其余 `throw`
+  - 主目录 `scrape-safety-news.js` 同步至 v4.2.1（此前 GitHub Actions 实际运行旧逻辑）
+  - 文档全面同步：CHANGELOG / Codex检修日志 / KNOWLEDGE / README
+  - 手机演示包重打 zip + 文档同步
+  - 交付前清理：删除 `.bak` 备份文件、移除根目录旧版 `生文助手.html`
+  - git push → GitHub Actions 手动触发验证通过（Run #30353331971，约 1700 条素材，16 分钟完成）
+- **Commit**: `fa5c1ac` / `555817c`
+- **影响范围**：脚本、文档、手机演示包、仓库清理
+
 ---
 
 ## 2026-07-26 — v5.6 抓取频率翻倍
@@ -627,7 +640,7 @@ AIGC:
 
 ---
 
-> 最后更新：2026-07-21
+> 最后更新：2026-07-28
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
