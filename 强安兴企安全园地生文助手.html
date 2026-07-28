@@ -991,6 +991,9 @@ select:focus {
   0%,100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.3; transform: scale(1.4); }
 }
+@keyframes diagSpin {
+  to { transform: rotate(360deg); }
+}
 .gen-step.active .gen-label {
   color: var(--green);
   font-weight: 700;
@@ -1040,7 +1043,10 @@ select:focus {
     </script>
   </head>
   <body>
-    <div id="diagBar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#222;color:#0f0;font:11px monospace;padding:3px 8px;display:block;max-height:60px;overflow-y:auto;">diag: loading...</div>
+    <div id="diagBar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#fff5e3;color:#a15c00;font:13px system-ui,-apple-system,'Segoe UI';padding:7px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 12px rgba(0,0,0,0.06);transition:opacity 0.35s ease;opacity:1;">
+      <span id="diagSpinner" style="width:14px;height:14px;border:2px solid #e8d5a3;border-top-color:#a15c00;border-radius:50%;animation:diagSpin 0.7s linear infinite;flex-shrink:0;"></span>
+      <span id="diagText" style="line-height:1.3;">正在加载安全素材…</span>
+    </div>
     <main class="app-shell">
       <header class="topbar">
         <div>
@@ -3101,12 +3107,11 @@ function fetchArticleContent(item) {
       // ===== DIAGNOSTICS =====
       (function(){
         var db = document.getElementById("diagBar");
-        var msgs = [];
-/* ========== 诊断日志 ========== */
-// 诊断日志记录
-        function log(m){ msgs.push(m); if(db) db.textContent = msgs.join(" | "); console.log("[DIAG]", m); }
-// 诊断错误记录
-        function err(m){ msgs.push("ERR:"+m); if(db){ db.textContent = msgs.join(" | "); db.style.color="#f33"; } console.error("[DIAG]", m); }
+        var diagText = document.getElementById("diagText");
+        var diagSpinner = document.getElementById("diagSpinner");
+
+        function log(m){ console.log("[DIAG]", m); }
+        function err(m){ console.error("[DIAG]", m); }
 
         log("script start");
         log("els ready="+(typeof els!=="undefined"));
@@ -3118,11 +3123,16 @@ function fetchArticleContent(item) {
         // 延迟检查 init 是否完成
         setTimeout(function(){
           if(window.__initDone) {
-            db.style.background = "#161";
-            log("init OK ✓");
-            // 快速隐藏，避免用户误以为页面卡在 loading
-            setTimeout(function(){ db.style.display="none"; }, 500);
+            if(db){ db.style.background = "#eaf6f1"; db.style.color = "#16705a"; }
+            if(diagSpinner){ diagSpinner.style.display = "none"; }
+            if(diagText){ diagText.textContent = "准备就绪"; }
+            // 优雅淡出
+            setTimeout(function(){ if(db) db.style.opacity="0"; }, 800);
+            setTimeout(function(){ if(db) db.style.display="none"; }, 1200);
           } else {
+            if(db){ db.style.background = "#fff1ef"; db.style.color = "#b42318"; }
+            if(diagSpinner){ diagSpinner.style.display = "none"; }
+            if(diagText){ diagText.textContent = "加载失败，请刷新页面重试"; }
             err("init NOT done after 1s!");
           }
         }, 1000);
