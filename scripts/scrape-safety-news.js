@@ -666,7 +666,7 @@ async function main() {
     const norm = normalizeTitle(item.title);
     if (seenBTitles.has(norm)) continue;
     seenBTitles.add(norm);
-    dedupedB.push(item);
+    dedupedB.push({ ...item, addedAt: todayISO });
   }
 
   // 再放历史素材（跳过重复标题）

@@ -1889,7 +1889,8 @@ function fetchArticleContent(item) {
                 category: g.category || classifyText(g.title + " " + (g.summary || ""), g.source || ""),
                 tags: g.tags || extractTags(g.title, g.summary || ""),
                 review: g.review || false,
-                score: g.score || 0
+                score: g.score || 0,
+                addedAt: g.addedAt || ""
               });
             }
 
@@ -1898,19 +1899,22 @@ function fetchArticleContent(item) {
             /* 清除所有旧"新增"标记，避免缓存污染导致全部误标 */
             var todayStr = new Date().toISOString().slice(0, 10);
             oldMats.forEach(function(om) { om.isNew = false; });
+            /* 基于 Gist 数据自带的入库日期判新增，不依赖素材缓存 */
+            var lastViewDate = localStorage.getItem("mat_last_view_date") || "";
+            if (lastViewDate) {
+              items.forEach(function(it) {
+                if (it.addedAt && it.addedAt > lastViewDate) {
+                  it.isNew = true;
+                }
+              });
+            }
             var existingTitles = {};
             oldMats.forEach(function(om) { existingTitles[om.title] = true; });
             var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
-            /* 标记今天新增：只要抓到新素材就标（含首次加载） */
-            if (freshItems.length > 0) {
-              freshItems.forEach(function(fi) { fi.isNew = true; fi.addedAt = todayStr; });
-            }
             materials = normalizeAndCapMaterials(oldMats.concat(freshItems));
-            /* 统计新素材实际存活数（归一化后仍在列表中的） */
+            /* 统计实际带新增标记的素材数（与 isNew 标记口径一致） */
             var survivedNew = 0;
-            var finalTitles = {};
-            materials.forEach(function(m) { finalTitles[m.title] = true; });
-            freshItems.forEach(function(fi) { if (finalTitles[fi.title]) survivedNew++; });
+            materials.forEach(function(m) { if (m.isNew) survivedNew++; });
             categories = ["全部"];
             var seenCat = {};
             materials.forEach(function(m2) {
@@ -1934,6 +1938,7 @@ function fetchArticleContent(item) {
             renderTabs();
             renderMaterials();
             saveMaterialsToCache(materials);
+            localStorage.setItem("mat_last_view_date", todayStr);
 
             showToast("管线返回 " + items.length + " 条，其中 " + survivedNew + " 条新素材入库，当前共 " + materials.length + " 条（质量分择优保留）");
             btn.disabled = false;
