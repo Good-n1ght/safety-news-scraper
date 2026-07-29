@@ -676,6 +676,7 @@ var GENERATION_DEFAULTS = {
 6. **GLM 与其他模型行为差异**：response_format 支持程度、返回 JSON 格式严格度不同，`parseJsonContent` 已做兼容但边缘情况仍可能出错
 7. **extensions/ 目录依赖**：`hooks.js` 和 `config.js` 是运行时必需文件，缺失会导致页面白屏。发布/演示时必须确保该目录完整
 8. **C 盘 source/repos 目录残留**：已废弃但未物理删除，新接手应忽略 C 盘、只关注 F 盘 `强安系列_手机展示/`
+9. **addedAt 过渡期**：管道改动部署后，Gist B 中已有素材不带 `addedAt` 字段（老数据），新素材会带。过渡期前端对无 `addedAt` 的素材不标新增，这是预期行为。一轮管道跑完后所有素材都会带上 `addedAt`。
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

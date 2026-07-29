@@ -37,6 +37,30 @@ AIGC:
 
 ---
 
+## 2026-07-29 — v5.0 入库日期驱动判新增（addedAt + lastViewDate）
+
+### 管道写入 addedAt，前端改用日期比较判新增
+- **日期**：2026-07-29
+- **背景**：前端判「新增」一直靠比对 localStorage 缓存的标题。换浏览器/清缓存后缓存为空 → 全部标新增。需要不依赖缓存大小的方案。
+- **方案**：利用 Gist A/B 双库结构，管道写入时给新素材打 `addedAt` 入库日期，前端单独存 `lastViewDate`，判新增改为 `addedAt > lastViewDate`。
+- **修改内容**：
+  - `scrape-safety-news.js`：写入 Gist B 时新素材带 `addedAt: todayISO`，老素材不动
+  - `强安兴企安全园地生文助手.html`：
+    - 透传 `addedAt` 字段
+    - 判新增：`it.addedAt > lastViewDate`
+    - `lastViewDate` 用独立 localStorage key，与素材缓存隔离
+    - `survivedNew` 统计改为读 `isNew === true`，与标记口径一致
+- **效果**：换浏览器/清缓存均正确标注，无缓存时不瞎标
+- **Commit**: `b20d5ab`
+
+### 新增标记条件修复
+- **日期**：2026-07-29
+- **问题**：`oldMats.length > 0` 导致首次/换浏览器时所有素材不标新增
+- **修复**：改为 `freshItems.length > 0`
+- **Commit**: `9cb4edd`
+
+---
+
 ## 2026-07-28 — v4 架构重写：双 Gist 分离（GPT 方案）
 
 ### Gist A 改为最新快照（覆盖写入），Gist B 独立为长期展示库
