@@ -67,7 +67,7 @@
 | 生文助手 | `强安兴企安全园地生文助手.html` | 联网搜索 + AI 生成安全宣教图文草稿 |
 | 强安视界 | `强安视界_UI改版.html` | 安全新闻聚合阅读器，实时抓取头条/百度/Bing |
 | 产品介绍 | `强安系列产品介绍_汇报页.html` | 产品体系汇报展示页 |
-| GitHub Pages | [good-n1ght.github.io/safety-news-scraper/生文助手.html](https://good-n1ght.github.io/safety-news-scraper/生文助手.html) | 生文助手在线版 |
+| GitHub Pages | [good-n1ght.github.io/safety-news-scraper/强安兴企安全园地生文助手.html](https://good-n1ght.github.io/safety-news-scraper/强安兴企安全园地生文助手.html) | 生文助手在线版 |
 
 ## 目录结构
 

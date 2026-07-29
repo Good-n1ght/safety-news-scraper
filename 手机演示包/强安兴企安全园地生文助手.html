@@ -1900,10 +1900,10 @@ function fetchArticleContent(item) {
             var todayStr = new Date().toISOString().slice(0, 10);
             oldMats.forEach(function(om) { om.isNew = false; });
             /* 基于 Gist 数据自带的入库日期判新增，不依赖素材缓存 */
-            var lastViewDate = localStorage.getItem("mat_last_view_date") || "";
-            if (lastViewDate) {
+            var lastViewAt = localStorage.getItem("mat_last_view_at") || "";
+            if (lastViewAt) {
               items.forEach(function(it) {
-                if (it.addedAt && it.addedAt > lastViewDate) {
+                if (it.addedAt && it.addedAt > lastViewAt) {
                   it.isNew = true;
                 }
               });
@@ -1938,7 +1938,7 @@ function fetchArticleContent(item) {
             renderTabs();
             renderMaterials();
             saveMaterialsToCache(materials);
-            localStorage.setItem("mat_last_view_date", todayStr);
+            localStorage.setItem("mat_last_view_at", todayStr);
 
             showToast("管线返回 " + items.length + " 条，其中 " + survivedNew + " 条新素材入库，当前共 " + materials.length + " 条（质量分择优保留）");
             btn.disabled = false;

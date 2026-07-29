@@ -214,6 +214,7 @@ function extractTags(title, summary) {
 // ========== 工具函数 ==========
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const todayISO = new Date().toISOString().slice(0, 10);
+const nowISO = new Date().toISOString();
 
 // ========== 错误分类 ==========
 class FetchError extends Error {
@@ -666,7 +667,7 @@ async function main() {
     const norm = normalizeTitle(item.title);
     if (seenBTitles.has(norm)) continue;
     seenBTitles.add(norm);
-    dedupedB.push({ ...item, addedAt: todayISO });
+    dedupedB.push({ ...item, addedAt: nowISO });
   }
 
   // 再放历史素材（跳过重复标题）

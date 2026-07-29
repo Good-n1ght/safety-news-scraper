@@ -310,19 +310,19 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 - **影响范围**：强安兴企安全园地生文助手.html — fetchTodayMaterials 函数 ~1904-1907 行
 - **Commit**: `9cb4edd`
 
-### v5.0 入库日期驱动判新增（addedAt + lastViewDate）
+### v5.0 入库日期驱动判新增（addedAt + lastViewAt）
 
 - **日期**：2026-07-29
 - **背景**：v4.3 的 `freshItems.length > 0` 仅在 localStorage 缓存正常时工作。换浏览器/清缓存后，oldMats 为空 → freshItems = 全部 → 所有素材全标新增。需要不依赖缓存大小的判新增方案。
-- **方案**：利用 Gist A/B 双库结构，在 Gist B 数据中自带入库日期 `addedAt`，前端单独记录 `lastViewDate`（上次查看日期），判新增逻辑从「比标题」改为「素材.addedAt > lastViewDate」。
+- **方案**：利用 Gist A/B 双库结构，在 Gist B 数据中自带入库日期 `addedAt`，前端单独记录 `lastViewAt`（上次查看日期），判新增逻辑从「比标题」改为「素材.addedAt > lastViewAt」。
 - **改动**：
-  1. 管道 `scrape-safety-news.js`：写入 Gist B 时新素材带 `addedAt: todayISO`，老素材保留原值
+  1. 管道 `scrape-safety-news.js`：写入 Gist B 时新素材带 `addedAt: nowISO`，老素材保留原值
   2. 前端 `强安兴企安全园地生文助手.html`：
      - Gist 数据映射时透传 `addedAt` 字段
-     - 判新增：`items.addedAt > lastViewDate` → 标 isNew
-     - `lastViewDate` 用独立 localStorage key（`mat_last_view_date`），与素材缓存大数组隔离
+     - 判新增：`items.addedAt > lastViewAt` → 标 isNew
+     - `lastViewAt` 用独立 localStorage key（`mat_last_view_at`），与素材缓存大数组隔离
      - `survivedNew` 统计口径同步改为「有 isNew === true 的条目数」，与标记口径一致
-  3. 无 lastViewDate 时一条不标（不瞎标），有数据则精确标
+  3. 无 lastViewAt 时一条不标（不瞎标），有数据则精确标
 - **效果**：换浏览器/清缓存/隔几天再打开均能正确标注新增，不再依赖素材缓存大小
 - **影响范围**：scrape-safety-news.js（管道）、强安兴企安全园地生文助手.html（前端）
 - **Commit**: `b20d5ab`

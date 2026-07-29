@@ -585,7 +585,7 @@ async function main() {
   // 9. 与 Gist B 已有数据合并去重（只合并 A 的 Top-30，不是全部 enriched）
   const normalizeTitle = (t) => (t || "").replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, "").toLowerCase().substring(0, 20);
   const existingTitles = new Set(existing.map((e) => normalizeTitle(e.title)));
-  const freshItems = topA.filter((item) => !existingTitles.has(normalizeTitle(item.title)));
+  const freshItems = topA.filter((item) => !existingTitles.has(normalizeTitle(item.title))).map(item => ({ ...item, addedAt: new Date().toISOString() }));
 
   console.log(`\n[合并] 新增 ${freshItems.length} 条，B 库已有 ${existing.length} 条`);
 
