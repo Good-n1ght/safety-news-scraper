@@ -670,12 +670,12 @@ async function main() {
     dedupedB.push({ ...item, addedAt: nowISO });
   }
 
-  // 再放历史素材（跳过重复标题）
+  // 再放历史素材（跳过重复标题，补打 addedAt）
   for (const item of existingB) {
     const norm = normalizeTitle(item.title);
     if (seenBTitles.has(norm)) continue;
     seenBTitles.add(norm);
-    dedupedB.push(item);
+    dedupedB.push({ ...item, addedAt: item.addedAt || nowISO });
   }
 
   const finalB = dedupedB.slice(0, MAX_DISPLAY_STORED);
