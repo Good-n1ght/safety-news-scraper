@@ -37,6 +37,27 @@ AIGC:
 
 ---
 
+## 2026-07-30 — v5.0.1 Gist B 历史素材缺 addedAt 修复 + 全面收口
+
+### Gist B 历史素材缺 addedAt 修复
+- **日期**：2026-07-30
+- **问题**：管道每日 4 次运行后前端显示 0 条新增。Gist B 中 70 条素材有 35 条缺 `addedAt`（Google News 历史条目未打时间戳），前端 `addedAt > lastViewAt` 判新增短路 → 全部不标
+- **修复**：`scrape-safety-news.js` 第 680 行 `dedupedB.push({ ...item, addedAt: item.addedAt || nowISO })`，历史素材补打当前 ISO 时间戳
+- **Commit**: `714124a`
+- **影响范围**：scrape-safety-news.js（管道）
+
+### 全面代码审查 + 手机演示包同步
+- **日期**：2026-07-30
+- **操作人**：Marvis
+- **修改内容**：
+  - 前端 `isNew` / `lastViewAt` / `normalizeAndCapMaterials` 逻辑逐项审查，确认 `mat_last_view_at` 独立 key + `addedAt` ISO 比较正确
+  - 手机演示包 14 文件 SHA256 全量对齐主目录
+  - 检修日志、CHANGELOG 补记
+  - 重打手机演示包.zip
+- **Commit**: 本次收口
+
+---
+
 ## 2026-07-29 — v5.0 入库日期驱动判新增（addedAt + lastViewAt）
 
 ### 管道写入 addedAt，前端改用日期比较判新增

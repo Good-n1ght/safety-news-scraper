@@ -327,6 +327,31 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 - **影响范围**：scrape-safety-news.js（管道）、强安兴企安全园地生文助手.html（前端）
 - **Commit**: `b20d5ab`
 
+---
+
+## 2026-07-30 — Marvis 检修
+
+### Gist B 历史素材缺 addedAt 修复
+
+- **日期**：2026-07-30
+- **问题**：管道每日 07/13/19/01 运行 Gist B 合并，前端显示 0 条新增。排查发现 Gist B 中 70 条素材有 35 条缺 `addedAt`（Google News 历史条目未打时间戳），前端 `addedAt > lastViewAt` 判新增短路 → 全部不标。
+- **修复**：`scrape-safety-news.js` 第 680 行：`dedupedB.push({ ...item, addedAt: item.addedAt || nowISO })`，历史素材补打当前时间戳
+- **影响范围**：scrape-safety-news.js（管道）、强安兴企安全园地生文助手.html（前端）
+- **Commit**: `714124a`
+
+### 全面代码审查 + 手机演示包同步 + 文档更新
+
+- **日期**：2026-07-30
+- **操作人**：Marvis
+- **修改内容**：
+  - 逐项审查前端 `isNew` / `lastViewAt` / `normalizeAndCapMaterials` 逻辑，确认 `mat_last_view_at` 独立 key 与 `addedAt` ISO 格式比较无 bug
+  - 手机演示包 14 个文件全量与主目录 SHA256 对齐（HTML / 文档 / extensions / 汇报页）
+  - 检修日志、CHANGELOG 补记 v5.5 至 7/30 全部改动
+  - 重打手机演示包.zip（238KB，只压运行文件）
+  - `git commit + push` 至 origin/main
+- **核心改进**：确保明天使用时代码全线对齐、管道正确工作、前端正确判新增
+- **Commit**: 本次收口
+
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
