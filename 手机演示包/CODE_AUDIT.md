@@ -235,6 +235,8 @@ AIGC:
 | v5.9 | 素材库上限 ↑ | 30 条 → 100 条滚动积累 |
 | v5.10 | 前端排序恢复 | 恢复质量分降序排列 |
 | v5.0 | addedAt + lastViewAt | 管道新素材打入库日期，前端改日期比较判新增，不依赖缓存 |
+| v5.0.2 | 24h 兜底判新增 | 首次访问无 lastViewAt 时，最近 24h 入库素材标 isNew，避免首访白吃标记机会 |
+| v5.0.3 | 手机端新增溢出修复 | .material-meta 改用 flex-wrap 换行，日期 margin-left:auto 右对齐 |
 | v4.3 | 新增标记条件 | oldMats.length→freshItems.length，首次加载也能标新增 |
 
 ---

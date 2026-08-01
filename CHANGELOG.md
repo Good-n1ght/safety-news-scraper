@@ -725,7 +725,19 @@ AIGC:
 
 ---
 
-> 最后更新：2026-07-28
+### v5.0.3 (2026-08-01) — 手机端「新增」标签溢出修复
+
+- **问题**：手机竖屏素材卡片 meta 行 badge（分类 + 新增 + 待审 + 日期）用 `justify-content: space-between` 挤在一行，窄屏时「新增」被挤出屏幕，需左滑才能看到
+- **修复**：CSS `.material-meta` 改为 `flex-wrap: wrap` + `justify-content: flex-start`，日期用 `margin-left: auto` 保持右对齐。badge 从左排列，溢出自动换行
+- **影响**：手机端新增标签始终可见，无需横向滚动
+
+### v5.0.2 (2026-07-31) — 首次访问 24h 兜底判新增
+
+- **问题**：手机首次打开时 `lastViewAt` 为空，`addedAt > lastViewAt` 判新增不触发，当天新货全部不标；页面同时顺手把 `lastViewAt` 记成当天日期，导致当天再无标记机会
+- **修复**：`fetchTodayMaterials` 中 `lastViewAt` 为空时走 else 分支——最近 24h 内入库素材（`addedAt > cutoff24h`）标 `isNew`。不影响已有 `lastViewAt` 的正常判定逻辑
+- **注**：同时部署了手机诊断页（`test_phone_diag.html`）用于排查 localStorage 状态
+
+> 最后更新：2026-08-01
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

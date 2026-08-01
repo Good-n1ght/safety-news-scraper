@@ -677,6 +677,8 @@ var GENERATION_DEFAULTS = {
 7. **extensions/ 目录依赖**：`hooks.js` 和 `config.js` 是运行时必需文件，缺失会导致页面白屏。发布/演示时必须确保该目录完整
 8. **C 盘 source/repos 目录残留**：已废弃但未物理删除，新接手应忽略 C 盘、只关注 F 盘 `强安系列_手机展示/`
 9. **addedAt 全覆盖（v5.0.1）**：管道合并时给所有历史素材补打 `addedAt: item.addedAt || nowISO`，确保 Gist B 中每条素材都带字段。前端 `mat_last_view_at` 用独立 localStorage key，与素材缓存隔离；判新增仅靠 `addedAt > lastViewAt` 字符串比较（ISO 格式天然正确）。换浏览器/清缓存后无 lastViewAt 时不瞎标，有数据则精确标。
+10. **首次访问兜底判新增（v5.0.2）**：`lastViewAt` 为空时加 else 分支——最近 24h 入库素材（`addedAt > cutoff24h`）标 `isNew`。避免首访白吃标记机会。部署手机诊断页 test_phone_diag.html 辅助排查。
+11. **手机端 badge 不溢出（v5.0.3）**：`.material-meta` 用 `flex-wrap: wrap` + `justify-content: flex-start`，日期 `margin-left: auto` 右对齐。窄屏 badge 自然换行，新增标签不再被挤出屏幕。
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*

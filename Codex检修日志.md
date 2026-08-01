@@ -360,6 +360,29 @@ Codex 提供方案文档 `安全园地数据源自动采集方案_给Marvis.md`�
 - **核心改进**：确保明天使用时代码全线对齐、管道正确工作、前端正确判新增
 - **Commit**: 本次收口
 
+---
+
+## 2026-07-31 — Marvis 检修
+
+### 首次访问 24h 兜底判新增（v5.0.2）
+
+- **日期**：2026-07-31
+- **问题**：用户手机首次打开线上版，`lastViewAt` 为空 → `addedAt > lastViewAt` 全不触发 → 86 条素材 0 新增标记。同时页面把 `lastViewAt` 记为当天（8/1），导致当天货再无标记机会。根因：日期精度太粗（只存 YYYY-MM-DD），首访白吃一天
+- **修复**：`fetchTodayMaterials` 第 1911 行加 else 分支——`lastViewAt` 为空时，`addedAt > cutoff24h（最近24h）` 标 `isNew`。ISO 字符串直接比较，无时区问题
+- **审查**：File Agent 审查通过，确认 ISO 比较正确、不影响已有逻辑、无副作用
+- **附带**：部署手机诊断页 `test_phone_diag.html` 到 GitHub Pages，检查 localStorage 状态和 Gist B 数据
+- **同步**：手机演示包 + README + CHANGELOG + Codex 检修日志 + 演示话术更新
+- **Commit**: `e4aaae6`
+
+### 手机端素材卡片「新增」标签溢出修复（v5.0.3）
+
+- **日期**：2026-08-01
+- **问题**：手机竖屏素材卡片 `.material-meta` 行用 `justify-content: space-between`，分类 badge + 新增 badge + 日期挤在一行，窄屏「新增」被挤出屏幕，需左滑查看
+- **修复**：CSS 改动 `.material-meta` → `flex-wrap: wrap` + `justify-content: flex-start`，加规则 `.material-meta > .source-name { margin-left: auto }` 让日期保持右对齐。badge 从左自然排列，溢出自动换行
+- **影响范围**：强安兴企安全园地生文助手.html（CSS 仅改动 `.material-meta` 块，共 126 字符）
+- **同步**：手机演示包 + 文档全量更新
+- **Commit**: `97e42b4`
+
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
