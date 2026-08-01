@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手机诊断报告</title>
+<style>
+body{font-family:system-ui,sans-serif;padding:16px;background:#1a1a2e;color:#eee;max-width:600px;margin:0 auto;line-height:1.7}
+h2{color:#ffd700;border-bottom:1px solid #333;padding-bottom:4px;margin-top:20px}
+.ok{color:#4caf50}.warn{color:#ff9800}.err{color:#f44336}
+pre{background:#0d0d1a;padding:12px;border-radius:6px;overflow-x:auto;font-size:13px}
+button{display:block;width:100%;padding:14px;margin:16px 0;background:#ffd700;color:#1a1a2e;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer}
+</style>
+</head>
+<body>
+<h1 style="text-align:center">手机诊断报告</h1>
+<p style="text-align:center;color:#888">点击按钮生成完整报告</p>
+<button onclick="runDiag()">开始诊断</button>
+<div id="report"></div>
+
+<script>
+var LS_KEY = "safety_news_materials_v1";
+var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/156bb6326a83056a148b8cbd175ff463/raw/safety_news_display.json";
+
+function runDiag() {
+  var out = [];
+  var now = new Date();
+  out.push("=== 诊断时间: " + now.toISOString() + " ===");
+  out.push("=== 本地时间: " + now.toString() + " ===");
+  out.push("=== 浏览器: " + navigator.userAgent + " ===");
+
+  // 1. LocalStorage 检查
+  out.push("");
+  out.push("--- localStorage 状态 ---");
+  var lastViewAt = localStorage.getItem("mat_last_view_at");
+  var dsVer = localStorage.getItem("mat_datasource_version");
+  var cacheRaw = localStorage.getItem(LS_KEY);
+
+  if (lastViewAt === null || lastViewAt === undefined) {
+    out.push("mat_last_view_at: ❌ 不存在");
+  } else {
+    out.push("mat_last_view_at: " + lastViewAt + " (" + (typeof lastViewAt) + ")");
+  }
+
+  out.push("mat_datasource_version: " + (dsVer || "不存在"));
+  out.push(LS_KEY + ": " + (cacheRaw ? "存在 (长度=" + cacheRaw.length + ")" : "❌ 不存在"));
+
+  if (cacheRaw) {
+    try {
+      var cache = JSON.parse(cacheRaw);
+      out.push("  缓存素材数: " + (cache.materials ? cache.materials.length : 0));
+      out.push("  savedAt: " + (cache.savedAt || "无"));
+      var withNew = (cache.materials || []).filter(function(m){return m.isNew;});
+      out.push("  带 isNew=true 的: " + withNew.length + " 条");
+    } catch(e) {
+      out.push("  缓存解析失败: " + e.message);
+    }
+  }
+
+  // 2. 抓取 Gist B
+  out.push("");
+  out.push("--- Gist B 数据检查 ---");
+  out.push("请求中...");
+
+  fetch(GIST_URL + "?_t=" + Date.now())
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var items = data.items || [];
+      out.push("Gist B 总素材数: " + items.length);
+
+      // 检查 addedAt
+      var withAddedAt = 0, withoutAddedAt = 0, addedAtVals = [];
+      for (var i = 0; i < Math.min(items.length, 10); i++) {
+        var a = items[i].addedAt;
+        addedAtVals.push("  [" + i + "] " + items[i].title.substring(0,30) + " -> addedAt=" + (a || "空"));
+        if (a) withAddedAt++; else withoutAddedAt++;
+      }
+      out.push("抽样前10条 addedAt 情况:");
+      addedAtVals.forEach(function(v){out.push(v);});
+
+      // 全量统计
+      var allWith = items.filter(function(it){return it.addedAt;}).length;
+      var allWithout = items.filter(function(it){return !it.addedAt;}).length;
+      out.push("全量: 有addedAt=" + allWith + ", 无addedAt=" + allWithout);
+
+      // 3. 模拟判定逻辑
+      out.push("");
+      out.push("--- isNew 判定模拟 ---");
+      var lv = lastViewAt || "";
+      if (!lv) {
+        out.push("lastViewAt 不存在 → 不会标任何新增");
+      } else {
+        var wouldMark = 0;
+        for (var j = 0; j < Math.min(items.length, 5); j++) {
+          var it = items[j];
+          var a = it.addedAt || "";
+          var cmp = a && a > lv;
+          out.push("  [" + j + "] " + it.title.substring(0,25) + " | addedAt=" + (a||"空") + " | > " + lv + " ? " + (cmp ? "✅" : "❌"));
+          if (cmp) wouldMark++;
+        }
+        // 全量
+        var fullMark = items.filter(function(it){return it.addedAt && it.addedAt > lv;}).length;
+        out.push("全量: " + fullMark + " 条会被标新增 (共" + items.length + " 条)");
+      }
+
+      // 4. 汇总
+      document.getElementById("report").innerHTML = "<h2>诊断结果</h2><pre>" + out.map(function(l){return l.replace(/</g,"&lt;").replace(/>/g,"&gt;");}).join("\n") + "</pre>";
+      document.querySelector("button").style.display = "none";
+    })
+    .catch(function(e){
+      out.push("Gist B 请求失败: " + e.message);
+      document.getElementById("report").innerHTML = "<h2>诊断结果</h2><pre>" + out.join("\n") + "</pre>";
+      document.querySelector("button").style.display = "none";
+    });
+}
+</script>
+</body>
+</html>
