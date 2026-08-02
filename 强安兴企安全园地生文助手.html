@@ -12,6 +12,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="强安兴企安全园地智能生文助手 — 面向国企工会和煤矿安全宣传的一站式AI生文生成工具，支持事故案例分析、班前会要点、安全知识问答等多种栏目模板，自动联网搜索安全素材并生成完整生文草稿。" />
     <title>强安兴企安全园地智能生文助手</title>
+    <!-- v5.12.11：内嵌 favicon，消除浏览器自动请求 favicon.ico 的 404 -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e3a5f'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='%23fff'%3E%E5%AE%89%3C/text%3E%3C/svg%3E" />
 <script async src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" onerror="console.warn('html2canvas CDN failed, export disabled')"></script>
 <!-- 扩展系统 -->
 <script src="extensions/hooks.js"></script>
@@ -947,7 +949,7 @@ select:focus {
 }
 .gen-label {
   font-size: 11px;
-  color: #889;
+  color: #667;
   white-space: nowrap;
   transition: color 0.3s;
 }
@@ -1101,7 +1103,7 @@ select:focus {
             placeholder="例如：我要做一篇唐山大地震纪念日相关的安全园地生文，要求正面宣传、能吸引职工往下看"
           ></textarea>
 
-          <div class="quick-tags" id="quickTags" aria-label="快捷主题"></div>
+          <div class="quick-tags" id="quickTags" role="group" aria-label="快捷主题"></div>
 
           <div class="form-grid">
             <label>

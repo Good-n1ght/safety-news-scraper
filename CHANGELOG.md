@@ -37,6 +37,15 @@ AIGC:
 
 ---
 
+## 2026-08-02 — v5.12.11 Lighthouse 满分冲刺：favicon + ARIA + 对比度（执行方：Claude Code）
+
+- 本地 Lighthouse 实测（手机：性能 98 / 无障碍 92 / 最佳实践 96 / SEO 100），修复 3 个扣分项：
+  1. 内嵌 SVG favicon（消除浏览器自动请求 favicon.ico 的 404）
+  2. quickTags 加 role="group"（aria-label 合法化）
+  3. .gen-label 颜色 #889 → #667（对比度 3.28 → 4.5+）
+
+---
+
 ## 2026-08-02 — v5.12.10 清理失效腾讯云代理（执行方：Claude Code）
 
 ### 背景
