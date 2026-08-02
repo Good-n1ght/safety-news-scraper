@@ -1708,16 +1708,12 @@ function applyTemplate(tplKey) {
 }
 
 /* ========== CORS 代理 ========== */
+/* v5.12.10：腾讯云 SCF 代理已全部失效（502 / 部署损坏），且素材已自带正文（v5.12.9），
+   不再依赖代理抓原文——代理列表清空，fetchArticleContent 的代理重试自动跳过。
+   将来若需恢复：往 CORS_PROXY_LIST 填入可用代理地址即可（config.js 同字段） */
 if (typeof CORS_PROXY_LIST === 'undefined') {
-var CORS_PROXY_LIST = [
-  "https://1437883484-1xfayinfej.ap-guangzhou.tencentscf.com/?url="
-];
+var CORS_PROXY_LIST = [];
 }
-var CORS_PROXY_IDX = 0;
-// [已废弃] 返回当前 CORS 代理地址。v5 后全文抓取已不再经过代理
-function getProxy() { return CORS_PROXY_LIST[CORS_PROXY_IDX]; }
-// [已废弃] 切换到下一个 CORS 代理
-function switchProxy() { CORS_PROXY_IDX = (CORS_PROXY_IDX + 1) % CORS_PROXY_LIST.length; }
 
 /* ========== 安全类搜索源 ========== */
 if (typeof SEARCH_SOURCES === 'undefined') {

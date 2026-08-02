@@ -37,6 +37,27 @@ AIGC:
 
 ---
 
+## 2026-08-02 — v5.12.10 清理失效腾讯云代理（执行方：Claude Code）
+
+### 背景
+- v5.12.9 后素材自带正文，前端生成不再依赖代理抓原文
+- 用户确认：腾讯云 SCF 代理（马维斯部署）已失效且无人维护 → 要求清理
+
+### 变更
+- 主文件 CORS_PROXY_LIST 硬编码 SCF 代理 → 清空（保留空列表结构，将来有可用代理可直接填入）
+- extensions/config.js CORS_PROXY_LIST（SCF + allorigins）→ 清空
+- 删除废弃死代码 getProxy / switchProxy / CORS_PROXY_IDX
+- 保留 fetchArticleContent 代理重试逻辑（空列表自动跳过，将来恢复只需填列表）
+- **强安视界未动**（其自有代理引用，删除会破坏其抓取功能）
+
+### 验证（删除后实测）
+- 主文件/强安视界/config.js 语法全过
+- 空代理列表：直连失败 → 代理跳过 → 降级 ✅（53ms 不等待）
+- 二次调用缓存直降 ✅
+- 影响范围：强安兴企安全园地生文助手.html + extensions/config.js
+
+---
+
 ## 2026-08-02 — v5.12.9 素材自带正文，彻底摆脱代理依赖（执行方：Claude Code）
 
 ### 背景
