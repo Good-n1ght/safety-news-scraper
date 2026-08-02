@@ -37,6 +37,18 @@ AIGC:
 
 ---
 
+## 2026-08-02 — v5.12.12 强安视界 Lighthouse 优化（执行方：Claude Code）
+
+- 本地 Lighthouse 实测（手机：性能 51 / 无障碍 83 / 最佳实践 96 / SEO 90），修复 4 处低风险项：
+  1. 内嵌 SVG favicon（消除 404）
+  2. 补 meta description（SEO）
+  3. categoryFilter select + 新闻 checkbox 加 aria-label（无障碍）
+  4. .btn-rewrite-item 颜色 #e65100 → #c2410c（对比度 3.78 → 5+）
+- 修复后：无障碍 100 / 最佳实践 100 / SEO 100 / 性能 58
+- **性能分不硬改**：根因是 429KB 单文件 + 335KB 内嵌 JSON 同步解析 + 首屏自动抓新闻，需大重构（拆 JSON 异步加载），风险高、收益不确定，按"别画蛇添足"原则暂缓
+
+---
+
 ## 2026-08-02 — v5.12.11 Lighthouse 满分冲刺：favicon + ARIA + 对比度（执行方：Claude Code）
 
 - 本地 Lighthouse 实测（手机：性能 98 / 无障碍 92 / 最佳实践 96 / SEO 100），修复 3 个扣分项：
