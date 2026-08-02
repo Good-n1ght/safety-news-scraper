@@ -1928,8 +1928,8 @@ function fetchArticleContent(item) {
         var todayISO = new Date().toISOString().slice(0, 10);
         var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/156bb6326a83056a148b8cbd175ff463/raw/safety_news_display.json";
 
-        /* 数据源版本标记：源切换后自动清旧缓存 */
-        var DS_VERSION = "gist-v6";
+        /* 数据源版本标记：源切换后自动清旧缓存（v5.12.9：素材库新增 content 正文字段，强制刷新） */
+        var DS_VERSION = "gist-v7";
         var oldVer = localStorage.getItem("mat_datasource_version");
         if (oldVer !== DS_VERSION) {
           localStorage.removeItem(MATERIALS_LS_KEY);
@@ -1963,6 +1963,8 @@ function fetchArticleContent(item) {
                 sourceUrl: g.link || "",
                 publishedAt: g.publishedAt || todayISO,
                 summary: g.summary || "",
+                /* v5.12.9：素材自带正文（管道抓取时存的，最多 500 字）——有正文就不用联网抓原文 */
+                content: g.content || "",
                 category: g.category || classifyText(g.title + " " + (g.summary || ""), g.source || ""),
                 tags: g.tags || extractTags(g.title, g.summary || ""),
                 review: g.review || false,
@@ -2410,6 +2412,10 @@ function fetchArticleContent(item) {
           // 有原文链接，直接抓取
           stepProgress(0);
           searchPromise = Promise.resolve().then(function() {
+            /* v5.12.9：素材库自带正文（管道抓取时存储）→ 直接使用，不联网抓原文，也不会有"抓取受限"提示 */
+            if (selectedMaterial.content && selectedMaterial.content.length >= 200) {
+              return [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: selectedMaterial.content, source: selectedMaterial.source || "素材库", summary: (selectedMaterial.summary || selectedMaterial.content).substring(0, 200) }];
+            }
             return fetchArticleContent({ link: selectedMaterial.sourceUrl, source: "原文", title: selectedMaterial.title });
           }).then(function(result) {
             /* v5.12.7：原文没抓到（降级为摘要）也要走素材库补充，不再只按 80 字判断——
