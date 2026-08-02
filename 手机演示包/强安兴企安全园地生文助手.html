@@ -1850,10 +1850,17 @@ function fetchArticleContent(item) {
 
   return grab(url, gd("fetch_timeout_ms", 12000))
     .catch(function(err) {
-      console.warn("直连抓取失败，走 CORS 代理重试: " + url, err);
-      var proxyUrl = CORS_PROXY_LIST[CORS_PROXY_IDX] + encodeURIComponent(url);
-      // v5.12.4：代理重试超时从 12s 缩短到 8s，死链素材整体等待不超过 ~9s
-      return grab(proxyUrl, 8000);
+      console.warn("直连抓取失败，尝试 CORS 代理: " + url, err);
+      /* v5.12.8：遍历代理列表逐个尝试（每个 6s 超时），不再只试第一个就放弃 */
+      var proxyList = (typeof CORS_PROXY_LIST !== 'undefined' && CORS_PROXY_LIST.length) ? CORS_PROXY_LIST : [];
+      function tryProxy(i) {
+        if (i >= proxyList.length) return Promise.reject(err);
+        return grab(proxyList[i] + encodeURIComponent(url), 6000).catch(function(e2) {
+          console.warn("代理[" + i + "]失败: " + (e2.message || e2) + "，尝试下一个");
+          return tryProxy(i + 1);
+        });
+      }
+      return tryProxy(0);
     })
     .then(function(html) {
       var text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
@@ -2450,7 +2457,8 @@ function fetchArticleContent(item) {
             var base = [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: selectedMaterial.summary || selectedMaterial.title, source: selectedMaterial.source || "素材库", summary: selectedMaterial.summary || "" }];
             var merged = base.concat(related);
             if (merged.length > 1) {
-              showToast("原文链接可能已失效，已用素材库相关素材补充生成");
+              /* v5.12.8：文案修正——不一定是链接失效，多数是浏览器跨域限制或源站不可达 */
+              showToast("原文抓取受限（跨域/源站不可达），已用素材库素材补充生成");
             }
             return merged;
           });
