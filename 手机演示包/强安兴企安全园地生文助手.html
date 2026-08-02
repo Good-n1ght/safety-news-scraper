@@ -2417,9 +2417,26 @@ function fetchArticleContent(item) {
           if (err && err.message === "NO_RESULTS") {
             hideProgress();
             setStatus("AI 自由生成");
-            showToast("未搜到相关内容，AI 将基于知识自由生成");
+            /* v5.12.1：网上搜不到（行业词/冷门主题）时，先从本地素材库按话题关键词找相关素材喂给 AI，避免凭空编 */
+            var kw = String(topic || "").replace(/\s+/g, "");
+            var localResults = [];
+            if (kw && materials && materials.length) {
+              localResults = materials
+                .filter(function(m) {
+                  return (m.title || "").indexOf(kw) !== -1 || (m.summary || "").indexOf(kw) !== -1 || (m.tags || []).join(",").indexOf(kw) !== -1;
+                })
+                .slice(0, 3)
+                .map(function(m) {
+                  return { title: m.title || "", link: m.sourceUrl || "", content: m.summary || m.title || "", source: m.source || "素材库", summary: m.summary || "" };
+                });
+            }
+            if (localResults.length) {
+              showToast("未搜到网络内容，已改用本地素材库相关素材");
+            } else {
+              showToast("未搜到相关内容，AI 将基于知识自由生成");
+            }
             stepProgress(1);
-            callDeepSeekDraft({ topic: topic, audience: audience, tone: tone, searchResults: [] }).then(function(draft) {
+            callDeepSeekDraft({ topic: topic, audience: audience, tone: tone, searchResults: selectSearchResults(localResults) }).then(function(draft) {
               stepProgress(2);
               setStatus("AI 生成");
               renderAiDraft(draft);
@@ -2847,14 +2864,25 @@ function fetchArticleContent(item) {
         // 隐藏旧的栏目化区域
         if (els.traceList) els.traceList.innerHTML = "";
 
-        // 正文（v5.11）：先整体转义，再白名单还原少量受控标签，防止模型输出注入 HTML
+        // 正文（v5.12.1）：先整体转义，再白名单还原正文所需的结构标签（h3/h4/p/strong/em/ul/ol/li/br/blockquote/img-hint），
+        // 防止模型输出注入危险标签（img/script/事件属性等一律保持转义）
         if (draft.content && els.articleBody) {
           var cleaned = draft.content.replace(/(<div class=['"]img-hint['"]>)\s*📷\s*建议配图[：:]\s*/g, '<div class="img-hint">');
           cleaned = escapeHtml(cleaned)
             .replace(/&lt;div class=&quot;img-hint&quot;&gt;/g, '<div class="img-hint">')
+            .replace(/&lt;\/div&gt;/g, '</div>')
+            .replace(/&lt;h3&gt;/g, '<h3>').replace(/&lt;\/h3&gt;/g, '</h3>')
+            .replace(/&lt;h4&gt;/g, '<h4>').replace(/&lt;\/h4&gt;/g, '</h4>')
+            .replace(/&lt;p&gt;/g, '<p>').replace(/&lt;\/p&gt;/g, '</p>')
+            .replace(/&lt;strong&gt;/g, '<strong>').replace(/&lt;\/strong&gt;/g, '</strong>')
+            .replace(/&lt;b&gt;/g, '<b>').replace(/&lt;\/b&gt;/g, '</b>')
+            .replace(/&lt;em&gt;/g, '<em>').replace(/&lt;\/em&gt;/g, '</em>')
+            .replace(/&lt;ul&gt;/g, '<ul>').replace(/&lt;\/ul&gt;/g, '</ul>')
+            .replace(/&lt;ol&gt;/g, '<ol>').replace(/&lt;\/ol&gt;/g, '</ol>')
+            .replace(/&lt;li&gt;/g, '<li>').replace(/&lt;\/li&gt;/g, '</li>')
+            .replace(/&lt;blockquote&gt;/g, '<blockquote>').replace(/&lt;\/blockquote&gt;/g, '</blockquote>')
             .replace(/&lt;br&gt;/g, '<br>')
-            .replace(/&lt;br \/&gt;/g, '<br>')
-            .replace(/&lt;\/div&gt;/g, '</div>');
+            .replace(/&lt;br \/&gt;/g, '<br>');
           els.articleBody.innerHTML = cleaned;
         }
 
