@@ -2524,7 +2524,10 @@ function fetchArticleContent(item) {
           console.warn("生成失败:", (err && err.message) || err);
           hideProgress();
           setStatus("本地生成");
-          showToast("网络错误，已自动切换本地兜底生成");
+          /* v5.12.5：把真实失败原因展示出来（之前统一报"网络错误"会误导排查） */
+          var failMsg = (err && err.message) || "未知错误";
+          if (failMsg.length > 40) failMsg = failMsg.substring(0, 40) + "…";
+          showToast("生成失败（" + failMsg + "），已用本地模板兜底");
           try {
             var fallbackDraft = makeLocalDraft(topic, audience, "线上宣传", materials || []);
             renderAiDraft(fallbackDraft);
@@ -2593,11 +2596,13 @@ function fetchArticleContent(item) {
 
         var systemPrompt = buildAISystemPrompt(params.searchResults || []);
         var userPrompt = buildAIUserPrompt(params);
-        var startTime = Date.now();
-        var TIMEOUT_MS = gd("api_timeout_ms", 60000);
 
         return new Promise(function(resolve, reject) {
           var done = false;
+          var startTime = Date.now();
+          /* v5.12.5：免费模型（OpenRouter :free）生成慢，超时放宽到 180s；普通模型 120s */
+          var isFreeModel = !!(window.DS_MODEL && window.DS_MODEL.indexOf(":free") !== -1);
+          var TIMEOUT_MS = gd("api_timeout_ms", isFreeModel ? 180000 : 120000);
           var timerId = setInterval(function() {
             if (!done && (Date.now() - startTime) > TIMEOUT_MS) {
               done = true;
@@ -2608,70 +2613,84 @@ function fetchArticleContent(item) {
 
           var chatUrl = window.DS_CHAT_ENDPOINT || (window.DS_BASE_URL.replace(/\/+$/, "") + "/v1/chat/completions");
 
+          /* v5.12.5：OpenRouter 免费模型普遍不支持 response_format: json_object，
+             发送会直接 400 导致生成失败——免费模型不携带该参数，其余模型保留 */
           var apiBody = {
             model: window.DS_API_MODEL || window.DS_MODEL,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
             ],
-            response_format: { type: "json_object" },
             temperature: gd("temperature", 0.9),
             max_tokens: gd("max_tokens", 3600),
             stream: false
           };
+          if (!isFreeModel) apiBody.response_format = { type: "json_object" };
 
-          /* === Hook: beforeApiCall === */
-          var apiCtx = Hooks.trigger(Hooks.BEFORE_API_CALL, { url: chatUrl, body: apiBody });
-          apiBody = apiCtx.body;
-          /* ========================= */
+          var retried = false;
 
-          fetch(apiCtx.url || chatUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer " + window.DS_API_KEY
-            },
-            body: JSON.stringify(apiBody)
-          }).then(function(response) {
-            return response.json().then(function(payload) {
-            if (!done) {
-              clearInterval(timerId);
-              if (!response.ok) {
-                throw new Error((payload && payload.error && payload.error.message) || ("DeepSeek HTTP " + response.status));
-              }
-              var content = payload && payload.choices && payload.choices[0] && payload.choices[0].message && payload.choices[0].message.content;
-              if (!content) {
-                throw new Error("DeepSeek 返回内容为空");
-              }
-              var result = normalizeModelDraft(parseJsonContent(content), params);
+          function doFetch(body) {
+            /* === Hook: beforeApiCall === */
+            var apiCtx = Hooks.trigger(Hooks.BEFORE_API_CALL, { url: chatUrl, body: body });
+            /* ========================= */
+            return fetch(apiCtx.url || chatUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + window.DS_API_KEY
+              },
+              body: JSON.stringify(apiCtx.body)
+            }).then(function(response) {
+              return response.json().then(function(payload) {
+                if (!done) {
+                  if (!response.ok) {
+                    var errMsg = (payload && payload.error && payload.error.message) || ("DeepSeek HTTP " + response.status);
+                    var e = new Error(errMsg);
+                    e.status = response.status;
+                    throw e;
+                  }
+                  var content = payload && payload.choices && payload.choices[0] && payload.choices[0].message && payload.choices[0].message.content;
+                  if (!content) {
+                    throw new Error("DeepSeek 返回内容为空");
+                  }
+                  var result = normalizeModelDraft(parseJsonContent(content), params);
 
-              /* === Hook: afterGenerate === */
-              result = Hooks.trigger(Hooks.AFTER_GENERATE, result) || result;
-              /* ========================== */
+                  /* === Hook: afterGenerate === */
+                  result = Hooks.trigger(Hooks.AFTER_GENERATE, result) || result;
+                  /* ========================== */
 
-              done = true;
-              resolve(result);
+                  done = true;
+                  clearInterval(timerId);
+                  resolve(result);
+                }
+              });
+            });
+          }
+
+          doFetch(apiBody).catch(function(err) {
+            if (done) throw err;
+            /* v5.12.5：部分模型（含个别非 free）虽带 response_format 仍报 400 → 去掉后重试一次 */
+            if (!retried && apiBody.response_format && err && err.status === 400) {
+              retried = true;
+              console.warn("模型可能不支持 json_object 格式（" + (err.message || "") + "），去掉后重试一次");
+              var body2 = Object.assign({}, apiBody);
+              delete body2.response_format;
+              return doFetch(body2);
             }
+            throw err;
           }).catch(function(err) {
             if (!done) {
               done = true;
               clearInterval(timerId);
-              reject(err);
+              var msg = (err && err.message) || String(err);
+              // 识别 CORS / 网络错误，给出更明确的提示
+              if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1 || msg.indexOf("fetch") !== -1) {
+                msg = "网络请求被拦截（CORS / 跨域限制），可尝试用 http-server 打开本页面";
+              }
+              reject(new Error(msg));
             }
           });
-        }).catch(function(err) {
-          if (!done) {
-            done = true;
-            clearInterval(timerId);
-            var msg = (err && err.message) || String(err);
-            // 识别 CORS / 网络错误，给出更明确的提示
-            if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1 || msg.indexOf("fetch") !== -1) {
-              msg = "网络请求被拦截（CORS / 跨域限制），可尝试用 http-server 打开本页面";
-            }
-            reject(new Error(msg));
-          }
         });
-      });
       }
 
 /* ========== AI 结果解析与规范化 ========== */
