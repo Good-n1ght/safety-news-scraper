@@ -2622,7 +2622,7 @@ function fetchArticleContent(item) {
               { role: "user", content: userPrompt }
             ],
             temperature: gd("temperature", 0.9),
-            max_tokens: gd("max_tokens", 3600),
+            max_tokens: gd("max_tokens", 8000),
             stream: false
           };
           if (!isFreeModel) apiBody.response_format = { type: "json_object" };
@@ -2701,7 +2701,11 @@ function fetchArticleContent(item) {
           return JSON.parse(trimmed);
         } catch (e) {
           var match = trimmed.match(/\{[\s\S]*\}/);
-          if (!match) throw new Error("模型未返回可解析 JSON");
+          if (!match) {
+            /* v5.12.6：记录模型原始输出（前 300 字）到控制台，便于定位解析失败原因 */
+            console.warn("模型未返回可解析 JSON，原始输出前300字:", trimmed.substring(0, 300));
+            throw new Error("模型未返回可解析 JSON");
+          }
           return JSON.parse(match[0]);
         }
       }
