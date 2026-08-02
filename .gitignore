@@ -2,3 +2,6 @@
 .env
 *.log
 .DS_Store
+
+# Lighthouse 测试结果（临时文件，不入库）
+lh_*.json
