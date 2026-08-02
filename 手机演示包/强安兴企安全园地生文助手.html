@@ -1833,6 +1833,7 @@ function fetchArticleContent(item) {
 
   if (_fetchFailCache[url]) {
     // 本次会话已知抓不到，直接降级用摘要，不再等待
+    item.contentFellBack = true;
     item.content = item.summary;
     return Promise.resolve(item);
   }
@@ -1874,6 +1875,8 @@ function fetchArticleContent(item) {
       console.warn("抓取失败: " + item.link, err);
       /* v5.12.4：记入会话缓存，本页面生命周期内不再重复等待该链接 */
       _fetchFailCache[item.link] = true;
+      /* v5.12.7：降级标记——供生成流程识别"原文没抓到、只有摘要"，触发素材库补充逻辑 */
+      item.contentFellBack = true;
       item.content = item.summary;
       return item;
     });
@@ -2402,7 +2405,9 @@ function fetchArticleContent(item) {
           searchPromise = Promise.resolve().then(function() {
             return fetchArticleContent({ link: selectedMaterial.sourceUrl, source: "原文", title: selectedMaterial.title });
           }).then(function(result) {
-            if (!result.content || result.content.length < 80) {
+            /* v5.12.7：原文没抓到（降级为摘要）也要走素材库补充，不再只按 80 字判断——
+               死链素材降级后的摘要常有 100+ 字，会绕过补充逻辑 */
+            if (!result.content || result.contentFellBack || result.content.length < 200) {
               throw new Error("DIRECT_FETCH_SHORT");
             }
             return [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: result.content, source: "原文", summary: result.content.substring(0, 200) }];

@@ -37,6 +37,23 @@ AIGC:
 
 ---
 
+## 2026-08-02 — v5.12.7 全面复检修复：死链补充逻辑被绕过（执行方：Claude Code）
+
+### 复检发现的两个真 bug（v5.12.3/4 引入）
+1. **死链素材补充逻辑被阈值绕过**：触发条件为"抓取内容 < 80 字"，但死链素材降级后是摘要（101 字）> 80 → 补充逻辑不触发 → 模型仍只用 101 字摘要硬写
+2. **会话缓存分支缺降级标记**：第二次点同一素材走缓存提前返回，无 contentFellBack 标记，摘要 > 200 字的素材会被绕过补充逻辑
+
+### 修复
+- fetchArticleContent 降级 catch 与缓存分支均打 `contentFellBack = true` 标记
+- generateDraft 判断升级：`!content || contentFellBack || content.length < 200` 任一命中即走素材库补充
+
+### 验证
+- 真实代码提取测试：死链素材（摘要 99 字）→ contentFellBack=true → 触发补充逻辑 ✅
+- 21 项静态复检全过（含两处误报澄清：isFreeModel 分支存在、硬编码 Key 为 0）
+- 影响范围：强安兴企安全园地生文助手.html（fetchArticleContent / generateDraft）
+
+---
+
 ## 2026-08-02 — v5.12.6 修复：模型输出被截断导致 JSON 解析失败（执行方：Claude Code）
 
 ### 问题（用户实测反馈）
