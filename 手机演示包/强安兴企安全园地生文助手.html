@@ -2392,11 +2392,47 @@ function fetchArticleContent(item) {
             }
             return [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: result.content, source: "原文", summary: result.content.substring(0, 200) }];
           }).catch(function(e) {
-            console.warn("原文抓取失败，回退 Bing 搜索:", e.message);
-            return searchBocha(topic, selectedMaterial !== null).then(function(results) {
-              if (!results || results.length === 0) throw new Error("NO_RESULTS");
-              return Promise.all(results.map(fetchArticleContent)).then(function() { return results; });
-            });
+            console.warn("原文抓取失败，改用素材库相关素材:", e.message);
+            /* v5.12.3：原文抓不到（死链/域名失效/超时/CORS）时，不再回退搜索绕圈子——
+               用「选中素材的摘要 + 素材库相关素材（话题词 + 标题关键词扩展匹配）」直接喂 AI */
+            var kws = [];
+            var kwTopic = String(topic || "").replace(/\s+/g, "");
+            if (kwTopic) kws.push(kwTopic);
+            /* 从选中素材标题提取关键词，扩大匹配面（如"六必讲"素材可提取出入井/班前/饮酒等词） */
+            (function() {
+              var t = selectedMaterial.title || "";
+              var chars = "";
+              for (var ci = 0; ci < t.length; ci++) {
+                var cc = t.charCodeAt(ci);
+                if ((cc >= 0x4e00 && cc <= 0x9fff) || (cc >= 48 && cc <= 57)) chars += t[ci];
+              }
+              var STOP = "的了吗呢啊一不要是在让把从对给和与及也都就这那我你他它们个吧哦最很更越想能会被使将正即又还或但而之其各每向于等";
+              var seen = {};
+              for (var i = 0; i < chars.length - 1 && kws.length < 8; i++) {
+                var w = chars.substring(i, i + 2);
+                if (STOP.indexOf(w) === -1 && !seen[w]) { seen[w] = true; kws.push(w); }
+              }
+            })();
+            var related = [];
+            if (kws.length && materials && materials.length) {
+              related = materials
+                .map(function(m) {
+                  var hits = kws.filter(function(k) { return (m.title || "").indexOf(k) !== -1 || (m.summary || "").indexOf(k) !== -1 || (m.tags || []).join(",").indexOf(k) !== -1; }).length;
+                  return { m: m, hits: hits };
+                })
+                .filter(function(x) { return x.m.id !== selectedMaterial.id && x.hits > 0; })
+                .sort(function(a, b) { return b.hits - a.hits; })
+                .slice(0, 3)
+                .map(function(x) {
+                  return { title: x.m.title || "", link: x.m.sourceUrl || "", content: x.m.summary || x.m.title || "", source: x.m.source || "素材库", summary: x.m.summary || "" };
+                });
+            }
+            var base = [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: selectedMaterial.summary || selectedMaterial.title, source: selectedMaterial.source || "素材库", summary: selectedMaterial.summary || "" }];
+            var merged = base.concat(related);
+            if (merged.length > 1) {
+              showToast("原文链接可能已失效，已用素材库相关素材补充生成");
+            }
+            return merged;
           });
         } else {
           // 没有原文链接，走 Bing 搜索
@@ -2499,7 +2535,7 @@ function fetchArticleContent(item) {
 
 // 构建 AI 系统提示词（角色设定 + 输出格式约束 + 搜索结果注入）
       function buildAISystemPrompt(searchResults) {
-        var base = `你是一个服务国企工会和煤矿安全宣传的资深生文编辑。你的任务是为\u201C强安兴企安全园地\u201D撰写一篇完整的、供人工审核后使用的安全教育生文草稿。\n\n核心要求：\n0. 必须严格基于提供的搜索结果撰写，不可凭空编造数据和案例。不要在 content 正文中插入"来源一""来源二"等引用标注。\n1. 输出严格 JSON，包含 title、titleAlternatives、lead、content、imageSuggestions、reviewReminders、references 七个字段\n2. title：一个让人想点进去看的标题，不低俗不标题党，但要抓人眼球。标题必须基于搜索结果或用户主题中的真实元素（事件、时间、地点、数字、措施）生成，禁止使用正文中没有出现的主题词、数据、地名，禁止与正文无关的猎奇表述；生成后自检：正文第一段必须能与标题呼应\n3. titleAlternatives：3个备选标题的数组，每个标题各具风格（如一个偏严肃、一个偏接地气、一个偏提问式），供编辑最终选用\n4. lead：适合手机端阅读的短导语（2-3句话），点出核心安全问题和阅读价值，吸引读者往下看，不超过80字\n5. content：正文，用 HTML 片段格式输出。必须达到 800-1500 字。结构要求：\n   - 开头：用真实案例/数据/场景切入（2-3段），让读者感觉这事跟自己有关\n   - 正文：至少 4-5 个小节（用 h3 标签），每节 150-300 字。结构是「问题是什么 → 为什么危险 → 怎么做才对 → 做完这一步下一步该做什么」，把安全提醒变成可操作的具体步骤\n   - 结尾：落到行动，告诉读者「现在就去检查XX」「今天下班前做XX」，不要喊口号\n   - 不要只写\"注意安全\"\"加强管理\"，要写具体的操作指引
+        var base = `你是一个服务国企工会和煤矿安全宣传的资深生文编辑。你的任务是为\u201C强安兴企安全园地\u201D撰写一篇完整的、供人工审核后使用的安全教育生文草稿。\n\n核心要求：\n0. 必须基于提供的搜索结果撰写，不可凭空编造具体数据、事故、文件文号。当搜索材料信息有限时：基于材料中已有的要点（政策条目、措施清单）逐条展开说明，结合煤矿安全生产的通用规程补充具体操作细节（检查流程、注意事项），让内容充实具体；但不得虚构材料中不存在的事件、数据、文件。不要在 content 正文中插入"来源一""来源二"等引用标注。\n1. 输出严格 JSON，包含 title、titleAlternatives、lead、content、imageSuggestions、reviewReminders、references 七个字段\n2. title：一个让人想点进去看的标题，不低俗不标题党，但要抓人眼球。标题必须基于搜索结果或用户主题中的真实元素（事件、时间、地点、数字、措施）生成，禁止使用正文中没有出现的主题词、数据、地名，禁止与正文无关的猎奇表述；生成后自检：正文第一段必须能与标题呼应\n3. titleAlternatives：3个备选标题的数组，每个标题各具风格（如一个偏严肃、一个偏接地气、一个偏提问式），供编辑最终选用\n4. lead：适合手机端阅读的短导语（2-3句话），点出核心安全问题和阅读价值，吸引读者往下看，不超过80字\n5. content：正文，用 HTML 片段格式输出。必须达到 800-1500 字。结构要求：\n   - 开头：用真实案例/数据/场景切入（2-3段），让读者感觉这事跟自己有关\n   - 正文：至少 4-5 个小节（用 h3 标签），每节 150-300 字。结构是「问题是什么 → 为什么危险 → 怎么做才对 → 做完这一步下一步该做什么」，把安全提醒变成可操作的具体步骤\n   - 结尾：落到行动，告诉读者「现在就去检查XX」「今天下班前做XX」，不要喊口号\n   - 不要只写\"注意安全\"\"加强管理\"，要写具体的操作指引
    - 必须引用搜索材料中的具体信息（至少 2-3 处：时间、数字、地点、具体措施），只有空泛概括视为不合格\n6. imageSuggestions：配图建议数组（3-5条，每条是具体场景描述而非英文关键词，如\"矿工班前会现场照片，展现酒精检测环节\"\"防汛巡查人员在矿井口检查排水设施\"\"高温作业现场发放防暑降温物资\"）\n7. reviewReminders：发布前审核提醒数组（2-4条，如\"涉及领导行程不写具体预测\"\"涉及事故不夸大不猎奇\"\"涉及统计数据需二次核实原始来源\"\"涉及具体企业名称需确认是否可公开\"）\n8. references：参考来源数组（每条含 source 和 url 两个字段，仅用于侧栏展示供编辑核对出处，不要在 content 正文中插入来源标注）\n9. 不要出现\u201C开头三句话\u201D\u201C标题风格\u201D\u201C智能拆解\u201D\u201C为什么这样写\u201D等元信息\n10. 宣传口径要稳妥，党政/重大纪念日/灾害/健康都要正面宣传\n11. 不编造领导行程、未确认会议、未给出的数据\n12. 健康类只做科普提醒，不做诊断治疗建议\n13. 语言要接地气，像老师傅跟工友聊天，不要官八股。禁止：一二三四点罗列式总结腔、"安全生产是企业发展的基石"这类正确的废话、每段以"首先/其次/最后"开头、空喊口号\\n14. 这是供人工审核后使用的生文草稿，不可直接发布`;
         var jsonFormat = "\n\nJSON 格式：\n{\"title\":\"文章标题\",\"titleAlternatives\":[\"备选标题1\",\"备选标题2\",\"备选标题3\"],\"lead\":\"适合手机阅读的短导语，2-3句话\",\"content\":\"<p>开头勾人段落</p><h3>小标题</h3><p>正文段落</p><p>结尾段落</p>\",\"imageSuggestions\":[\"矿工班前会现场照片\",\"防汛巡查现场图\",\"高温作业防暑实拍\"],\"reviewReminders\":[\"审核提醒1\",\"审核提醒2\",\"审核提醒3\"],\"references\":[{\"source\":\"来源名称\",\"url\":\"https://来源链接\"}]}";
         if (!searchResults || !searchResults.length) return base + jsonFormat;
