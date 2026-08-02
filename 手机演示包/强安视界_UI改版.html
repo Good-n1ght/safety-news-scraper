@@ -1930,8 +1930,8 @@ function fetchBaiduHot() {
             has_full: false,
             pubDate: "",
             source: "百度热榜-" + tabConf.label,
-            /* v5.11：hotTag 实测为排名/状态字符串（"0"-"9"），非热度值；改用榜单名次映射热度 */
-            hotValue: Math.max(0, 100 - (item.index || 0)),
+            /* v5.11：hotTag 实测为排名/状态字符串（"0"-"9"），非热度值；改用榜单名次映射热度，无名次记 0 */
+            hotValue: item.index ? Math.max(0, 100 - item.index) : 0,
             category: tabConf.category
           };
         });
