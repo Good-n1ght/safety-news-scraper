@@ -11,10 +11,9 @@
  */
 
 /* ========== CORS 代理 ========== */
-var CORS_PROXY_LIST = [
-  "https://1437883484-k88upcj3r3.ap-guangzhou.tencentscf.com/?url=",
-  "https://api.allorigins.win/raw?url="   // 备用代理
-];
+/* v5.12.10：原 SCF 代理已失效（实测 502 / exec format error），素材已自带正文不再依赖代理，
+   列表清空；将来有可用代理直接填入即可 */
+var CORS_PROXY_LIST = [];
 
 /* ========== 搜索源配置 ==========
  * site:    站点域名（用于 site: 搜索）
