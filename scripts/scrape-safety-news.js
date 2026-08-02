@@ -417,6 +417,31 @@ async function updateGistA(token, items) {
   console.log(`[Gist A] 写入成功 → ${result.html_url}`);
 }
 
+// v5.11: raw URL 404 时用 Gist API 复读，确认文件是否真实不存在
+// raw 404 可能是 CDN 抖动 / gist 转私有 / 网络中间态——若 API 读得到，说明 B 实际存在，
+// 此时走初始化会用本轮 top-30 覆盖历史 100 条展示库（永久丢失），必须中止并告警
+async function gistBExistsViaApi() {
+  let token = "";
+  try { token = process.env.GIST_TOKEN || ""; } catch (e) { token = ""; }
+  if (!token) return false; // 无 Token 无法 API 复读，退回原逻辑
+  try {
+    const resp = await fetch(GIST_B_API_URL, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" }
+    });
+    if (resp.status === 200) {
+      const gist = await resp.json();
+      return !!(gist.files && gist.files[GIST_B_FILENAME]);
+    }
+    if (resp.status === 404) return false;
+    // 限流/5xx：无法确认，保守按"存在"处理（宁可本轮中止，不可覆盖历史库）
+    console.warn(`[Gist B] API 复读异常 HTTP ${resp.status}，保守按存在处理`);
+    return true;
+  } catch (err) {
+    console.warn(`[Gist B] API 复读失败: ${err.message}，保守按存在处理`);
+    return true;
+  }
+}
+
 // ========== v4: 拉取 Gist B（长期展示库），含首次迁移逻辑 ==========
 async function fetchExistingGistB() {
   console.log("[Gist B] 拉取已有展示库...");
@@ -428,7 +453,11 @@ async function fetchExistingGistB() {
 
     if (!resp.ok) {
       if (statusCode === 404) {
-        console.log("[Gist B] 文件不存在 (404)，尝试从旧文件初始化...");
+        // v5.11 保护：raw 404 ≠ 不存在，先 API 复读再决定是否允许初始化
+        if (await gistBExistsViaApi()) {
+          throw new Error("保护触发：Gist B 经 API 确认存在但 raw 读取 404（CDN 抖动/权限异常），已中止本轮写入，防止历史展示库被覆盖");
+        }
+        console.log("[Gist B] 文件确认不存在 (404)，尝试从旧文件初始化...");
         return await initFromOldGist();
       }
       throw classifyFetchError(new Error(`HTTP ${statusCode}`), statusCode);

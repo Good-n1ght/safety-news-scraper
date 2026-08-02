@@ -1263,6 +1263,11 @@ select:focus {
       <input type="password" id="gistTokenInput" placeholder="GitHub Token（需 gist 权限）" />
       <p class="hint">首次使用需先创建 <a href="https://gist.github.com" target="_blank" rel="noopener">Gist</a> 并生成 <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">GitHub Token</a></p>
     </div>
+    <div class="setting-row">
+      <label class="setting-label" for="bochaKeyInput">博查 API Key</label>
+      <input type="password" id="bochaKeyInput" placeholder="搜索安全站点用（api.bocha.cn 免费注册）" />
+      <p class="hint">v5.11 起不再内置共享 Key，请填写自己的博查 Key</p>
+    </div>
     <div class="settings-actions">
       <button class="btn-cancel" id="settingsCancel">取消</button>
       <button class="btn-save" id="settingsSave">保存</button>
@@ -1307,9 +1312,14 @@ function getBrandForModel(modelId) {
 }
 
 /* ---------- 全局状态 ---------- */
-window.DS_API_KEY     = localStorage.getItem("ds_api_key")     || DEFAULT_API_KEY;
-window.DS_MODEL       = localStorage.getItem("ds_model")       || DEFAULT_MODEL;
-window.DS_BASE_URL    = localStorage.getItem("ds_base_url")    || DEFAULT_BASE_URL;
+// v5.11：顶层 localStorage 读取加防护，存储被禁用/隐私模式下不白屏
+var _lsGet = (function() {
+  try { var t = localStorage; return function(k, fb) { try { var v = t.getItem(k); return (v === null || v === undefined) ? fb : v; } catch (e) { return fb; } }; }
+  catch (e) { return function(k, fb) { return fb; }; }
+})();
+window.DS_API_KEY     = _lsGet("ds_api_key", DEFAULT_API_KEY);
+window.DS_MODEL       = _lsGet("ds_model", DEFAULT_MODEL);
+window.DS_BASE_URL    = _lsGet("ds_base_url", DEFAULT_BASE_URL);
 window.DS_CHAT_ENDPOINT = null;
 window.DS_API_MODEL     = null;
 (function() {
@@ -1318,8 +1328,8 @@ window.DS_API_MODEL     = null;
   if (info && info.apiModel)     window.DS_API_MODEL = info.apiModel;
 })();
 /* ---------- Gist 配置 ---------- */
-window.GIST_ID    = localStorage.getItem("gist_id")    || "eb0fea051748ee0b33070cf7bd16be4a";
-window.GIST_TOKEN = localStorage.getItem("gist_token") || "";
+window.GIST_ID    = _lsGet("gist_id", "eb0fea051748ee0b33070cf7bd16be4a");
+window.GIST_TOKEN = _lsGet("gist_token", "");
 window.GIST_RAW   = "https://gist.githubusercontent.com/Good-n1ght/" + window.GIST_ID + "/raw/drafts.json";
 /* ---------- 工具函数 ---------- */
 // 轻量级 toast 提示，3 秒后自动消失
@@ -1337,6 +1347,17 @@ function showToast(msg) {
 // HTML 实体转义，防止 XSS
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+// 带超时的 fetch 封装（v5.11）：默认 30 秒，超时自动中断，防网络挂起导致按钮/进度条永久卡死
+function fetchWithTimeout(url, options, timeoutMs) {
+  options = options || {};
+  timeoutMs = timeoutMs || 30000;
+  var controller = new AbortController();
+  var timer = setTimeout(function() { controller.abort(); }, timeoutMs);
+  return fetch(url, Object.assign({}, options, { signal: controller.signal }))
+    .then(function(resp) { clearTimeout(timer); return resp; },
+          function(err) { clearTimeout(timer); throw err; });
 }
 
 // 从 localStorage 读取 API Base URL，带默认值回退
@@ -1362,7 +1383,9 @@ function initSettings() {
     modelSelect: document.getElementById("modelSelect"),
     apiKeyInput: document.getElementById("apiKeyInput"),
     baseUrlInput: document.getElementById("baseUrlInput"),
-    gistIdInput: document.getElementById("gistIdInput")
+    gistIdInput: document.getElementById("gistIdInput"),
+    gistTokenInput: document.getElementById("gistTokenInput"),
+    bochaKeyInput: document.getElementById("bochaKeyInput")
   };
 
   if (!els.settingsBtn || !els.settingsOverlay) return;
@@ -1371,6 +1394,8 @@ function initSettings() {
   if (els.apiKeyInput) els.apiKeyInput.value = window.DS_API_KEY || "";
   if (els.baseUrlInput) els.baseUrlInput.value = window.DS_BASE_URL || DEFAULT_BASE_URL;
   if (els.gistIdInput) els.gistIdInput.value = window.GIST_ID || "";
+  if (els.gistTokenInput) els.gistTokenInput.value = window.GIST_TOKEN || "";
+  if (els.bochaKeyInput) els.bochaKeyInput.value = (function() { try { return localStorage.getItem("bocha_api_key") || ""; } catch (e) { return ""; } })();
 
   // ---- 两级模型选择器 ----
   var savedModel = window.DS_MODEL || DEFAULT_MODEL;
@@ -1493,6 +1518,10 @@ function initSettings() {
       else { localStorage.removeItem("gist_id"); }
       if (gistToken) { localStorage.setItem("gist_token", gistToken); window.GIST_TOKEN = gistToken; }
       else { localStorage.removeItem("gist_token"); }
+      /* v5.11：博查 Key 独立存储（不再硬编码在源码中） */
+      var bochaKey = els.bochaKeyInput ? els.bochaKeyInput.value.trim() : "";
+      if (bochaKey) { try { localStorage.setItem("bocha_api_key", bochaKey); } catch (e) {} }
+      else { try { localStorage.removeItem("bocha_api_key"); } catch (e) {} }
       window.GIST_RAW = "https://gist.githubusercontent.com/Good-n1ght/" + window.GIST_ID + "/raw/drafts.json";
     showToast("API 设置已保存");
   });
@@ -1717,14 +1746,22 @@ function searchBocha(topic, injectCalendar) {
   var siteFilters = sources.map(function(s) { return s.site; }).join("|");
   var query = topic + (calendarKW ? " " + calendarKW : "");
 
-  return fetch("https://api.bocha.cn/v1/web-search", {
+  /* v5.11：博查 Key 改从设置面板/localStorage 读取（原硬编码 Key 已泄露吊销，不再内置） */
+  var bochaKey = "";
+  try { bochaKey = localStorage.getItem("bocha_api_key") || ""; } catch (e) { bochaKey = ""; }
+  if (!bochaKey) {
+    showToast("请先在设置面板填写博查 API Key（api.bocha.cn 免费注册，1000 次/月）");
+    return Promise.resolve([]);
+  }
+
+  return fetchWithTimeout("https://api.bocha.cn/v1/web-search", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer sk-a980fe7a23034a7893367238ac828159"
+      "Authorization": "Bearer " + bochaKey
     },
     body: JSON.stringify({ query: query, count: 10, freshness: "oneMonth", include: siteFilters })
-  })
+  }, 15000)
   .then(function(r) {
     if (!r.ok) throw new Error("\u535a\u67e5 API HTTP " + r.status);
     return r.json();
@@ -1750,14 +1787,14 @@ function searchBocha(topic, injectCalendar) {
   .then(function(results) {
     if (results.length === 0) {
       console.log("\u5b89\u5168\u7ad9\u70b9\u65e0\u7ed3\u679c\uff0c\u56de\u9000\u901a\u7528\u641c\u7d22");
-      return fetch("https://api.bocha.cn/v1/web-search", {
+      return fetchWithTimeout("https://api.bocha.cn/v1/web-search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer sk-a980fe7a23034a7893367238ac828159"
+          "Authorization": "Bearer " + bochaKey
         },
         body: JSON.stringify({ query: topic + " \u5b89\u5168", count: 10, freshness: "oneMonth" })
-      })
+      }, 15000)
       .then(function(r2) { if (!r2.ok) throw new Error("\u535a\u67e5 API HTTP " + r2.status); return r2.json(); })
       .then(function(data2) {
         if (data2.code !== 200) throw new Error("\u535a\u67e5 API \u8fd4\u56de\u9519\u8bef: " + (data2.message || data2.code));
@@ -1864,7 +1901,7 @@ function fetchArticleContent(item) {
           console.log("数据源已切换，旧缓存已清理(" + MATERIALS_LS_KEY + ")");
         }
 
-        fetch(GIST_URL + "?_t=" + Date.now())
+        fetchWithTimeout(GIST_URL + "?_t=" + Date.now(), null, 30000)
           .then(function(resp) {
             if (!resp.ok) throw new Error("HTTP " + resp.status);
             return resp.json();
@@ -2753,9 +2790,14 @@ function fetchArticleContent(item) {
         // 隐藏旧的栏目化区域
         if (els.traceList) els.traceList.innerHTML = "";
 
-        // 正文：直接用 HTML 渲染，清理 img-hint 中的冗余前缀
+        // 正文（v5.11）：先整体转义，再白名单还原少量受控标签，防止模型输出注入 HTML
         if (draft.content && els.articleBody) {
           var cleaned = draft.content.replace(/(<div class=['"]img-hint['"]>)\s*📷\s*建议配图[：:]\s*/g, '<div class="img-hint">');
+          cleaned = escapeHtml(cleaned)
+            .replace(/&lt;div class=&quot;img-hint&quot;&gt;/g, '<div class="img-hint">')
+            .replace(/&lt;br&gt;/g, '<br>')
+            .replace(/&lt;br \/&gt;/g, '<br>')
+            .replace(/&lt;\/div&gt;/g, '</div>');
           els.articleBody.innerHTML = cleaned;
         }
 
@@ -2943,7 +2985,7 @@ function fetchArticleContent(item) {
 /* ========== 历史记录管理 ========== */
 // 从 localStorage 加载历史记录列表
       function loadHistory() {
-        return fetch(window.GIST_RAW + "?t=" + Date.now())
+        return fetchWithTimeout(window.GIST_RAW + "?t=" + Date.now(), null, 30000)
           .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
           .then(function(data) {
             _historyCache = (data && data.articles) ? data.articles : [];

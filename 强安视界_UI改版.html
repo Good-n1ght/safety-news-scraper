@@ -1190,10 +1190,15 @@ function getBrandForModel(modelId) {
 }
 
 /* ---------- 全局状态 ---------- */
-window.DS_API_KEY     = localStorage.getItem("ds_api_key")     || DEFAULT_API_KEY;
-window.DS_MODEL       = localStorage.getItem("ds_model")       || DEFAULT_MODEL;
-window.DS_BASE_URL    = localStorage.getItem("ds_base_url")    || DEFAULT_BASE_URL;
-window.PEXELS_API_KEY = localStorage.getItem("pexels_api_key") || "";
+// v5.11：顶层 localStorage 读取加防护，存储被禁用/隐私模式下不白屏
+var _lsGet = (function() {
+  try { var t = localStorage; return function(k, fb) { try { var v = t.getItem(k); return (v === null || v === undefined) ? fb : v; } catch (e) { return fb; } }; }
+  catch (e) { return function(k, fb) { return fb; }; }
+})();
+window.DS_API_KEY     = _lsGet("ds_api_key", DEFAULT_API_KEY);
+window.DS_MODEL       = _lsGet("ds_model", DEFAULT_MODEL);
+window.DS_BASE_URL    = _lsGet("ds_base_url", DEFAULT_BASE_URL);
+window.PEXELS_API_KEY = _lsGet("pexels_api_key", "");
 window.DS_CHAT_ENDPOINT = null;
 window.DS_API_MODEL     = null;
 
@@ -1223,6 +1228,17 @@ function showToast(msg) {
 // HTML 实体转义
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+// 带超时的 fetch 封装（v5.11）：默认 30 秒，超时自动中断，防任一源挂起导致 Promise.all 永不 settle
+function fetchWithTimeout(url, options, timeoutMs) {
+  options = options || {};
+  timeoutMs = timeoutMs || 30000;
+  var controller = new AbortController();
+  var timer = setTimeout(function() { controller.abort(); }, timeoutMs);
+  return fetch(url, Object.assign({}, options, { signal: controller.signal }))
+    .then(function(resp) { clearTimeout(timer); return resp; },
+          function(err) { clearTimeout(timer); throw err; });
 }
 
 // 读取 API Base URL
@@ -1891,7 +1907,7 @@ function fetchBaiduHot() {
 // 抓取单个百度热搜分类榜
   function fetchOneTab(tabConf) {
     var url = CORS_PROXY + encodeURIComponent("https://top.baidu.com/board?tab=" + tabConf.tab);
-    return fetch(url, { headers: { "Accept": "text/html" } })
+    return fetchWithTimeout(url, { headers: { "Accept": "text/html" } }, 15000)
       .then(function(resp) {
         if (!resp.ok) throw new Error("HTTP " + resp.status);
         return resp.text();
@@ -1914,7 +1930,8 @@ function fetchBaiduHot() {
             has_full: false,
             pubDate: "",
             source: "百度热榜-" + tabConf.label,
-            hotValue: parseInt(item.hotTag) || 0,
+            /* v5.11：hotTag 实测为排名/状态字符串（"0"-"9"），非热度值；改用榜单名次映射热度 */
+            hotValue: Math.max(0, 100 - (item.index || 0)),
             category: tabConf.category
           };
         });
@@ -1959,7 +1976,7 @@ function fetchSearchSources() {
   function fetchOne(src) {
     var query = "site:" + src.site + " " + src.keywords;
     var url = CORS_PROXY + encodeURIComponent("https://www.bing.com/search?q=" + query + "&count=10&setlang=zh-cn");
-    return fetch(url, { headers: { "Accept": "text/html" } })
+    return fetchWithTimeout(url, { headers: { "Accept": "text/html" } }, 15000)
       .then(function(resp) {
         if (!resp.ok) throw new Error("HTTP " + resp.status);
         return resp.text();
@@ -2030,7 +2047,7 @@ function fetchNews() {
 
   var promises = RSS_SOURCES.map(function(src) {
     var fetchUrl = RSS2JSON_API + encodeURIComponent(src.url) + "&_t=" + Date.now();
-    return fetch(fetchUrl)
+    return fetchWithTimeout(fetchUrl, null, 15000)
       .then(function(resp) {
         if (!resp.ok) throw new Error("HTTP " + resp.status);
         return resp.json();
@@ -2405,8 +2422,9 @@ function generateArticles() {
 function renderGeneratedArticles() {
   els.articleSection.innerHTML = generatedArticles.map(function(article, i) {
     var title = escapeHtml(article.title);
+    // v5.11：正文先转义再换行，防 AI 输出（源自第三方新闻标题回显）注入 HTML
     var body = article.article
-      ? article.article.replace(/\n/g, '<br>')
+      ? escapeHtml(article.article).replace(/\n/g, '<br>')
       : "点击阅读原文查看详情";
     var sourceHtml = "来源：" + escapeHtml(article.source) +
       (article.link ? ' · <a href="' + escapeHtml(article.link) + '" target="_blank" rel="noopener">阅读原文</a>' : "");
