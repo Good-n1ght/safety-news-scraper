@@ -1985,8 +1985,8 @@ function fetchLiveMaterials() {
         var todayISO = new Date().toISOString().slice(0, 10);
         var GIST_URL = "https://gist.githubusercontent.com/Good-n1ght/156bb6326a83056a148b8cbd175ff463/raw/safety_news_display.json";
 
-        /* 数据源版本标记：源切换后自动清旧缓存（v5.12.9：素材库新增 content 正文字段，强制刷新） */
-        var DS_VERSION = "gist-v7";
+        /* 数据源版本标记：源切换后自动清旧缓存（v5.14.5：清掉过滤前的旧实时素材缓存） */
+        var DS_VERSION = "gist-v8";
         var oldVer = localStorage.getItem("mat_datasource_version");
         if (oldVer !== DS_VERSION) {
           localStorage.removeItem(MATERIALS_LS_KEY);
