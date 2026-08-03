@@ -1918,6 +1918,55 @@ function fetchArticleContent(item) {
         return tags.slice(0, 3);
       }
 
+// v5.14：实时抓取中国安全类 RSS（rss2json 通道）——素材库管道在美国服务器抓中国站受限，
+// 前端实时通道在用户网络（中国）下可正常访问，弥补素材库正文不足
+var LIVE_RSS_SOURCES = [
+  { name: "中新网-社会", url: "https://www.chinanews.com.cn/rss/society.xml" },
+  { name: "人民网-要闻", url: "http://www.people.com.cn/rss/ywkx.xml" }
+];
+var RSS2JSON_API = "https://api.rss2json.com/v1/api.json?rss_url=";
+
+function fetchLiveMaterials() {
+  var todayISO = new Date().toISOString().slice(0, 10);
+  var promises = LIVE_RSS_SOURCES.map(function(src) {
+    return fetchWithTimeout(RSS2JSON_API + encodeURIComponent(src.url) + "&_t=" + Date.now(), null, 15000)
+      .then(function(resp) {
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return resp.json();
+      })
+      .then(function(data) {
+        if (data.status !== "ok") throw new Error("rss2json error");
+        return (data.items || []).map(function(item) {
+          var cleanText = function(s) {
+            return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+          };
+          var summary = cleanText(item.description || "").substring(0, 1500);
+          var title = cleanText(item.title);
+          return {
+            id: "live-" + (item.link || title || Math.random()),
+            title: title,
+            source: src.name,
+            sourceUrl: item.link || "",
+            publishedAt: (item.pubDate || "").slice(0, 10) || todayISO,
+            summary: summary,
+            content: summary,
+            category: classifyText(title + " " + summary, src.name),
+            tags: extractTags(title, summary),
+            review: false,
+            score: 60,
+            addedAt: new Date().toISOString(),
+            isLive: true
+          };
+        });
+      });
+  });
+  return Promise.all(promises).then(function(arrs) {
+    var flat = [];
+    arrs.forEach(function(arr) { flat = flat.concat(arr || []); });
+    return flat;
+  });
+}
+
 // 主入口：拉取 Gist 云端素材库 + localStorage 缓存合并去重
       function fetchTodayMaterials() {
         var btn = document.getElementById("fetchMaterialsBtn");
@@ -1934,6 +1983,10 @@ function fetchArticleContent(item) {
           localStorage.setItem("mat_datasource_version", DS_VERSION);
           console.log("数据源已切换，旧缓存已清理(" + MATERIALS_LS_KEY + ")");
         }
+
+        /* v5.14：实时抓取中国安全类 RSS（rss2json 通道，用户网络可访问）——
+           素材库管道在美国服务器抓中国站受限，前端实时通道不受此限制 */
+        var livePromise = fetchLiveMaterials().catch(function() { return []; });
 
         fetchWithTimeout(GIST_URL + "?_t=" + Date.now(), null, 30000)
           .then(function(resp) {
@@ -1996,7 +2049,12 @@ function fetchArticleContent(item) {
             var existingTitles = {};
             oldMats.forEach(function(om) { existingTitles[om.title] = true; });
             var freshItems = items.filter(function(it) { return !existingTitles[it.title]; });
-            materials = normalizeAndCapMaterials(oldMats.concat(freshItems));
+            /* v5.14：合并实时抓取素材（live 不参与"新增"标记，避免每次刷新都闪） */
+            var liveItems = [];
+            return livePromise.then(function(live) {
+              liveItems = live || [];
+              liveItems.forEach(function(li) { li.isLive = true; });
+              materials = normalizeAndCapMaterials(oldMats.concat(freshItems, liveItems));
             /* 统计实际带新增标记的素材数（与 isNew 标记口径一致） */
             var survivedNew = 0;
             materials.forEach(function(m) { if (m.isNew) survivedNew++; });
@@ -2028,6 +2086,7 @@ function fetchArticleContent(item) {
             showToast("管线返回 " + items.length + " 条，其中 " + survivedNew + " 条新素材入库，当前共 " + materials.length + " 条（质量分择优保留）");
             btn.disabled = false;
             btn.textContent = "获取安全素材";
+            }); /* v5.14：livePromise 嵌套回调闭合 */
           }).catch(function(err) {
             showToast("抓取失败：" + (err.message || "网络错误"));
             btn.disabled = false;
@@ -2411,8 +2470,9 @@ function fetchArticleContent(item) {
           stepProgress(0);
           searchPromise = Promise.resolve().then(function() {
             /* v5.12.9：素材库自带正文（管道抓取时存储）→ 直接使用，不联网抓原文，也不会有"抓取受限"提示 */
-            if (selectedMaterial.content && selectedMaterial.content.length >= 200) {
-              return [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: selectedMaterial.content, source: selectedMaterial.source || "素材库", summary: (selectedMaterial.summary || selectedMaterial.content).substring(0, 200) }];
+            /* v5.14：实时抓取素材（isLive，长摘要）同样直接使用 */
+            if ((selectedMaterial.content && selectedMaterial.content.length >= 200) || selectedMaterial.isLive) {
+              return [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: selectedMaterial.content || selectedMaterial.summary || selectedMaterial.title, source: selectedMaterial.source || "素材库", summary: (selectedMaterial.summary || selectedMaterial.content || "").substring(0, 200) }];
             }
             return fetchArticleContent({ link: selectedMaterial.sourceUrl, source: "原文", title: selectedMaterial.title });
           }).then(function(result) {
