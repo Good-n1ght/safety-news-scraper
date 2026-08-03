@@ -1926,6 +1926,13 @@ var LIVE_RSS_SOURCES = [
 ];
 var RSS2JSON_API = "https://api.rss2json.com/v1/api.json?rss_url=";
 
+// v5.14.2：安全主题过滤——实时抓取的是通用新闻频道，只保留与安全园地主题相关的新闻
+function isSafetyRelevant(title, summary) {
+  var text = String(title + " " + summary).toLowerCase();
+  var keys = ["煤矿", "矿山", "矿难", "瓦斯", "透水", "顶板", "粉尘", "尘肺", "职业病", "班前会", "班组", "井下", "安全生产", "安全监管", "安全培训", "安康杯", "应急", "救援", "消防", "防汛", "防台", "台风", "暴雨", "洪水", "地震", "灾害", "预警", "演练", "隐患", "排查", "整治", "事故", "高温", "防暑", "溺水", "寒潮", "职工健康", "危化品", "有限空间", "燃气", "执法检查", "停产"];
+  return keys.some(function(k) { return text.indexOf(k) !== -1; });
+}
+
 function fetchLiveMaterials() {
   var todayISO = new Date().toISOString().slice(0, 10);
   var promises = LIVE_RSS_SOURCES.map(function(src) {
@@ -1958,7 +1965,9 @@ function fetchLiveMaterials() {
             addedAt: new Date().toISOString(),
             isLive: true
           };
-        });
+        })
+        /* v5.14.2：只保留安全主题相关新闻，过滤跑题素材 */
+        .filter(function(m) { return isSafetyRelevant(m.title, m.summary); });
       });
   });
   return Promise.all(promises).then(function(arrs) {
