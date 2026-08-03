@@ -1953,7 +1953,8 @@ function fetchLiveMaterials() {
             category: classifyText(title + " " + summary, src.name),
             tags: extractTags(title, summary),
             review: false,
-            score: 60,
+            /* v5.14.1：实时素材评分提到 90，排在素材列表前列（原 60 分被老素材淹没） */
+            score: 90,
             addedAt: new Date().toISOString(),
             isLive: true
           };
@@ -2330,6 +2331,7 @@ function fetchLiveMaterials() {
               '<div class="material-meta">' +
                 '<span class="badge">' + escapeHtml(item.category) + '</span>' +
                 (item.isNew ? '<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;">新增</span>' : '') +
+                (item.isLive ? '<span class="badge" style="background:#dbeafe;color:#1d4ed8;font-weight:700;">实时</span>' : '') +
                 (item.review ? '<span class="badge" style="background:#fef2f2;color:#b42318;font-weight:600;">待审</span>' : '') +
                 '<span class="source-name">' + escapeHtml(item.publishedAt) + '</span>' +
               '</div>' +
@@ -2520,10 +2522,7 @@ function fetchLiveMaterials() {
             }
             var base = [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: selectedMaterial.summary || selectedMaterial.title, source: selectedMaterial.source || "素材库", summary: selectedMaterial.summary || "" }];
             var merged = base.concat(related);
-            if (merged.length > 1) {
-              /* v5.12.8：文案修正——不一定是链接失效，多数是浏览器跨域限制或源站不可达 */
-              showToast("原文抓取受限（跨域/源站不可达），已用素材库素材补充生成");
-            }
+            /* v5.14.1：去掉"抓取受限"提示（观感不好），静默降级，后台日志保留 */
             return merged;
           });
         } else {
@@ -2569,11 +2568,7 @@ function fetchLiveMaterials() {
                   return { title: m.title || "", link: m.sourceUrl || "", content: m.summary || m.title || "", source: m.source || "素材库", summary: m.summary || "" };
                 });
             }
-            if (localResults.length) {
-              showToast("未搜到网络内容，已改用本地素材库相关素材");
-            } else {
-              showToast("未搜到相关内容，AI 将基于知识自由生成");
-            }
+            /* v5.14.1：去掉搜索失败的 toast（静默降级，观感统一） */
             stepProgress(1);
             callDeepSeekDraft({ topic: topic, audience: audience, tone: tone, searchResults: selectSearchResults(localResults) }).then(function(draft) {
               stepProgress(2);
