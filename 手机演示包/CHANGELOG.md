@@ -37,6 +37,27 @@ AIGC:
 
 ---
 
+## 2026-08-03 — v5.13 管道正文抓取修复：Google News 链接解码（执行方：Claude Code）
+
+### 问题（素材库实测发现）
+- 素材库 92 条全部 content=0~11 字，前端"素材自带正文"机制未生效
+- Gist A 本轮快照 30 条同样无正文——**管道正文抓取几乎全失败**
+
+### 根因
+- Google News RSS 链接是**编码重定向**（`news.google.com/rss/articles/CBMi...`，URL-safe base64 编码真实地址）
+- 管道原有"提取实际 URL"代码是**空操作**（两个分支等价），服务器 fetch 抓到的是 Google 中间页（正文仅 11 字）
+- 抓取失败无重试，源站偶发超时/反爬即丢正文
+
+### 修复（scrape-safety-news.js）
+- 新增 `decodeGoogleNewsUrl`：CBMi base64 解码提取真实 URL（解码失败/非 Google 链接原样返回，安全降级）
+- `fetchArticle` 失败重试一次（2 秒后），救回部分源站偶发失败
+
+### 验证
+- 管道语法 ✅；解码函数单元测试 4 项全过（2 样例 + 普通链接原样 + 空输入不崩）
+- 真实效果待下一轮定时抓取（今日 13:00/19:00）后验证素材库 content 字段
+
+---
+
 ## 2026-08-02 — v5.12.12 强安视界 Lighthouse 优化（执行方：Claude Code）
 
 - 本地 Lighthouse 实测（手机：性能 51 / 无障碍 83 / 最佳实践 96 / SEO 90），修复 4 处低风险项：
