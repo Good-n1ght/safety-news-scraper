@@ -218,6 +218,12 @@ AIGC:
 
 ---
 
+## 2026/8/4 v5.17 管道 DuckDuckGo 免费搜索层
+
+- 查证 2026 开源主流：SearXNG（自建永久免费）+ DuckDuckGo（免 Key）
+- 管道第三层加 searchDuckDuckGo（5 通用安全词，解析+链接解码+容错），单测 5/5 全过
+- 真实效果待下轮抓取验证
+
 ## 2026/8/4 v5.16 免费搜索通道
 
 - 用户要求完全免费；实测 rss2json + Google News RSS 关键词搜索可用（免费）

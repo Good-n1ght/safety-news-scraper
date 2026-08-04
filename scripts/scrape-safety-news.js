@@ -53,6 +53,15 @@ const MIN_DAILY_TARGET = 5;
 const MIN_SCORE = 55;
 
 // ========== 第一层：Google News RSS 关键词 ==========
+// v5.17: DuckDuckGo 免费搜索关键词（无 site: 限定，弥补官方站覆盖不足）
+const DDG_KEYWORDS = [
+  "煤矿 安全生产 班组",
+  "矿山 隐患排查 应急",
+  "职工 职业健康 尘肺",
+  "防汛 高温 安全 提醒",
+  "事故 警示 演练 安全"
+];
+
 const GOOGLE_NEWS_KEYWORDS = [
   "煤矿安全",
   "矿山安全",
@@ -293,6 +302,54 @@ async function fetchGoogleNewsRSS(keyword) {
 }
 
 // ========== Bing 搜索官方源 ==========
+// ========== v5.17: DuckDuckGo 免费搜索层（无 Key 无额度，2026 开源社区主流免费方案） ==========
+// 返回 { title, link, summary } 数组，失败返回 []（不中断管道）
+async function searchDuckDuckGo(query) {
+  const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+  console.log(`[DDG] ${query}`);
+
+  try {
+    const resp = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!resp.ok) {
+      console.warn(`[DDG] HTTP ${resp.status}`);
+      return [];
+    }
+
+    const html = await resp.text();
+    const $ = cheerio.load(html);
+    const results = [];
+
+    $(".result").each((_, el) => {
+      if (results.length >= 3) return false;
+      const $a = $(el).find(".result__a").first();
+      const title = $a.text().replace(/\s+/g, " ").trim();
+      if (!title) return;
+      let link = $a.attr("href") || "";
+      /* DDG 跳转链接解码真实地址（uddg 参数） */
+      const uddg = (link.match(/uddg=([^&]+)/) || [])[1];
+      if (uddg) {
+        try { link = decodeURIComponent(uddg); } catch (e) { /* 保持原链接 */ }
+      }
+      const summary = $(el).find(".result__snippet").first().text().replace(/\s+/g, " ").trim() || title;
+      results.push({ title, link, summary });
+    });
+
+    console.log(`[DDG] ${query}: ${results.length} 条`);
+    return results;
+  } catch (err) {
+    console.warn(`[DDG] ${query} 失败: ${err.message}`);
+    return [];
+  }
+}
+
 async function searchOfficialSource(source) {
   const query = `site:${source.site} ${source.keywords}`;
   const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}&setmkt=zh-CN&cc=CN&count=5`;
@@ -645,8 +702,22 @@ async function main() {
   }
   console.log(`[官方站总计] ${officialResults.length} 条`);
 
+  // 2.5 DuckDuckGo 免费搜索层（v5.17）
+  console.log("\n--- 第三层：DuckDuckGo 免费搜索 ---");
+  const ddgResults = [];
+  for (const kw of DDG_KEYWORDS) {
+    try {
+      const items = await searchDuckDuckGo(kw);
+      ddgResults.push(...items);
+    } catch (err) {
+      console.warn(`[DDG异常] ${kw}: ${err.message}`);
+    }
+    await sleep(2000);
+  }
+  console.log(`[DDG 总计] ${ddgResults.length} 条`);
+
   // 3. 链接去重
-  const allRaw = [...officialResults, ...gnResults];
+  const allRaw = [...officialResults, ...gnResults, ...ddgResults];
   const seenLinks = new Set();
   const uniqueResults = [];
   for (const item of allRaw) {
