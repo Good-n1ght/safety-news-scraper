@@ -2687,7 +2687,8 @@ function fetchLiveMaterials() {
                   return { title: x.m.title || "", link: x.m.sourceUrl || "", content: x.m.summary || x.m.title || "", source: x.m.source || "素材库", summary: x.m.summary || "" };
                 });
             }
-            var base = [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: selectedMaterial.summary || selectedMaterial.title, source: selectedMaterial.source || "素材库", summary: selectedMaterial.summary || "" }];
+            /* v5.18：选中素材标记为主素材（isPrimary）——防止 AI 被补充素材带偏主题 */
+            var base = [{ title: selectedMaterial.title, link: selectedMaterial.sourceUrl, content: selectedMaterial.summary || selectedMaterial.title, source: selectedMaterial.source || "素材库", summary: selectedMaterial.summary || "", isPrimary: true }];
             var merged = base.concat(related);
             /* v5.14.1：去掉"抓取受限"提示（观感不好），静默降级，后台日志保留 */
             return merged;
@@ -2818,9 +2819,12 @@ function fetchLiveMaterials() {
         var jsonFormat = "\n\nJSON 格式：\n{\"title\":\"文章标题\",\"titleAlternatives\":[\"备选标题1\",\"备选标题2\",\"备选标题3\"],\"lead\":\"适合手机阅读的短导语，2-3句话\",\"content\":\"<p>开头勾人段落</p><h3>小标题</h3><p>正文段落</p><p>结尾段落</p>\",\"imageSuggestions\":[\"矿工班前会现场照片\",\"防汛巡查现场图\",\"高温作业防暑实拍\"],\"reviewReminders\":[\"审核提醒1\",\"审核提醒2\",\"审核提醒3\"],\"references\":[{\"source\":\"来源名称\",\"url\":\"https://来源链接\"}]}";
         if (!searchResults || !searchResults.length) return base + jsonFormat;
         var formattedResults = searchResults.map(function(r, i) {
-          return (i + 1) + ". 【" + r.source + "】" + r.title + "\n   链接：" + r.link + "\n   摘要：" + r.summary + "\n   正文节选：" + (r.content || r.summary).substring(0, 800);
+          /* v5.18：主素材（用户选中的）加标注，防止 AI 被补充素材带偏主题 */
+          var tag = r.isPrimary ? "【★主题素材】" : "";
+          return (i + 1) + ". " + tag + "【" + r.source + "】" + r.title + "\n   链接：" + r.link + "\n   摘要：" + r.summary + "\n   正文节选：" + (r.content || r.summary).substring(0, 800);
         }).join("\n\n");
-        return base + "\n\n【联网搜索结果】以下是实时搜索到的相关资料，请严格基于这些内容撰写：\n" + formattedResults + jsonFormat;
+        return base + "\n\n【联网搜索结果】以下是实时搜索到的相关资料，请严格基于这些内容撰写：\n" +
+          "★标注【主题素材】的是本次写作的核心主题，文章（包括标题、开头、主要小节）必须围绕它展开；其余条目仅为背景参考，可少量引用其细节，但不得喧宾夺主。\n" + formattedResults + jsonFormat;
       }
 
 // 构建 AI 用户消息（话题、体裁、受众、字数等参数）
