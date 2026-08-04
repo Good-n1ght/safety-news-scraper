@@ -1748,8 +1748,8 @@ function searchBocha(topic, injectCalendar) {
   var bochaKey = "";
   try { bochaKey = localStorage.getItem("bocha_api_key") || ""; } catch (e) { bochaKey = ""; }
   if (!bochaKey) {
-    showToast("请先在设置面板填写博查 API Key（api.bocha.cn 免费注册，1000 次/月）");
-    return Promise.resolve([]);
+    /* v5.16：无博查 Key → 免费 Google News 搜索通道（不提示不打断，静默联网搜索） */
+    return searchFreeWeb(topic, 8).catch(function() { return []; });
   }
 
   return fetchWithTimeout("https://api.bocha.cn/v1/web-search", {
@@ -1933,8 +1933,48 @@ function isSafetyRelevant(title, summary) {
   return keys.some(function(k) { return text.indexOf(k) !== -1; });
 }
 
+// v5.16：免费搜索通道 = rss2json 中转 Google News RSS 关键词搜索（完全免费，无博查 Key 也能联网搜）
+// 局限：摘要为标题+来源（几十字），无长摘要；链接为 Google News 编码链接（解码出真实地址）
+function searchFreeWeb(query, count, retried) {
+  var rssUrl = "https://news.google.com/rss/search?q=" + encodeURIComponent(query) + "&hl=zh-CN&gl=CN&ceid=CN:zh-Hans";
+  return fetchWithTimeout(RSS2JSON_API + encodeURIComponent(rssUrl) + "&_t=" + Date.now(), null, 15000)
+    .then(function(resp) {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      return resp.json();
+    })
+    .then(function(data) {
+      if (data.status !== "ok") throw new Error("google news rss error");
+      return (data.items || []).slice(0, count || 8).map(function(item) {
+        var cleanText = function(s) {
+          return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+        };
+        var title = cleanText(item.title);
+        var summary = cleanText(item.description).substring(0, 500);
+        /* v5.16：Google News 编码链接实测无法解码出真实 URL（protobuf 无 URL 字段），
+           保留原链接——用户点击浏览器会自动跳转到原文 */
+        var link = item.link || "";
+        return {
+          title: title,
+          link: link,
+          summary: summary,
+          source: (summary.match(/([一-龥A-Za-z0-9\.\-]+\.(?:com|cn|gov|net|org)\b)/) || [])[1] || "谷歌新闻",
+          content: summary,
+          datePublished: (item.pubDate || "").slice(0, 10)
+        };
+      });
+    })
+    /* v5.16：免费服务（rss2json）偶发失败，重试一次更稳 */
+    .catch(function(e) {
+      if (!retried) {
+        console.warn("免费搜索失败重试: " + query, e.message);
+        return searchFreeWeb(query, count, true);
+      }
+      throw e;
+    });
+}
+
 // v5.15：实时素材主通道 = 博查按安全主题词搜索（用户已有博查 Key，天生安全主题、数量多、摘要长）；
-// RSS 通用频道降级为回退（无 Key 或博查失败时用）
+// 无 Key 时用免费 Google News 主题词搜索（v5.16），RSS 通用频道为最后回退
 /* v5.15.1：开滦官网内容优先（site: 限定搜索开滦要闻/会议精神/安全动态），再是通用安全主题词 */
 var BOCHA_LIVE_TOPICS = ["site:kailuan.com.cn 安全", "site:kailuan.com.cn 会议 精神", "开滦集团 安全生产 部署", "煤矿安全 班组 班前会", "安全生产 隐患排查 应急", "防汛 高温 职工健康", "矿山 事故 警示 演练", "职业病 尘肺 体检 劳动保护"];
 
@@ -1984,7 +2024,39 @@ function fetchLiveMaterials() {
   var todayISO = new Date().toISOString().slice(0, 10);
   var bochaKey = "";
   try { bochaKey = localStorage.getItem("bocha_api_key") || ""; } catch (e) { bochaKey = ""; }
-  if (!bochaKey) return fetchLiveRSS();
+  /* v5.16：无博查 Key → 免费 Google News 主题词搜索（比通用 RSS 对口），失败再回退通用 RSS */
+  if (!bochaKey) {
+    return Promise.all(BOCHA_LIVE_TOPICS.map(function(topic) {
+      return searchFreeWeb(topic, 2).catch(function() { return []; });
+    })).then(function(arrs) {
+      var flat = [];
+      arrs.forEach(function(arr) { flat = flat.concat(arr || []); });
+      var seen = {}, out = [];
+      flat.forEach(function(it) {
+        if (!it.title || seen[it.title]) return;
+        seen[it.title] = true;
+        if (isSafetyRelevant(it.title, it.summary) || String(it.link || "").indexOf("kailuan.com.cn") !== -1) out.push(it);
+      });
+      if (!out.length) return fetchLiveRSS();
+      return out.map(function(it) {
+        return {
+          id: "live-" + (it.link || it.title || Math.random()),
+          title: it.title,
+          source: it.source || "谷歌新闻",
+          sourceUrl: it.link || "",
+          publishedAt: it.datePublished || todayISO,
+          summary: it.summary,
+          content: it.summary,
+          category: classifyText(it.title + " " + it.summary, it.source || ""),
+          tags: extractTags(it.title, it.summary),
+          review: false,
+          score: 90,
+          addedAt: new Date().toISOString(),
+          isLive: true
+        };
+      });
+    });
+  }
   /* v5.15.2：单词独立容错（限流 429 等 2 秒重试一次；仍失败只跳过该词） */
   function fetchTopic(topic, allowRetry) {
     return fetchWithTimeout("https://api.bocha.cn/v1/web-search", {
