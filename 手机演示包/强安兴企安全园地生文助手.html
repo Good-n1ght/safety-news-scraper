@@ -1933,7 +1933,11 @@ function isSafetyRelevant(title, summary) {
   return keys.some(function(k) { return text.indexOf(k) !== -1; });
 }
 
-function fetchLiveMaterials() {
+// v5.15：实时素材主通道 = 博查按安全主题词搜索（用户已有博查 Key，天生安全主题、数量多、摘要长）；
+// RSS 通用频道降级为回退（无 Key 或博查失败时用）
+var BOCHA_LIVE_TOPICS = ["煤矿安全 班组 班前会", "安全生产 隐患排查 应急", "防汛 高温 职工健康", "矿山 事故 警示 演练", "职业病 尘肺 体检 劳动保护"];
+
+function fetchLiveRSS() {
   var todayISO = new Date().toISOString().slice(0, 10);
   var promises = LIVE_RSS_SOURCES.map(function(src) {
     return fetchWithTimeout(RSS2JSON_API + encodeURIComponent(src.url) + "&_t=" + Date.now(), null, 15000)
@@ -1960,13 +1964,11 @@ function fetchLiveMaterials() {
             category: classifyText(title + " " + summary, src.name),
             tags: extractTags(title, summary),
             review: false,
-            /* v5.14.1：实时素材评分提到 90，排在素材列表前列（原 60 分被老素材淹没） */
             score: 90,
             addedAt: new Date().toISOString(),
             isLive: true
           };
         })
-        /* v5.14.2：只保留安全主题相关新闻，过滤跑题素材 */
         .filter(function(m) { return isSafetyRelevant(m.title, m.summary); });
       });
   });
@@ -1974,6 +1976,59 @@ function fetchLiveMaterials() {
     var flat = [];
     arrs.forEach(function(arr) { flat = flat.concat(arr || []); });
     return flat;
+  });
+}
+
+function fetchLiveMaterials() {
+  var todayISO = new Date().toISOString().slice(0, 10);
+  var bochaKey = "";
+  try { bochaKey = localStorage.getItem("bocha_api_key") || ""; } catch (e) { bochaKey = ""; }
+  if (!bochaKey) return fetchLiveRSS();
+  var promises = BOCHA_LIVE_TOPICS.map(function(topic) {
+    return fetchWithTimeout("https://api.bocha.cn/v1/web-search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + bochaKey },
+      body: JSON.stringify({ query: topic, count: 6, freshness: "oneWeek" })
+    }, 15000)
+    .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function(data) {
+      if (data.code !== 200) throw new Error("bocha " + data.code);
+      var pages = (data.data && data.data.webPages && data.data.webPages.value) || [];
+      return pages.map(function(p) {
+        var title = (p.name || "").trim();
+        var summary = (p.snippet || "").substring(0, 500);
+        return {
+          id: "live-" + (p.url || title || Math.random()),
+          title: title,
+          source: p.siteName || "博查搜索",
+          sourceUrl: p.url || "",
+          publishedAt: (p.datePublished || "").slice(0, 10) || todayISO,
+          summary: summary,
+          content: summary,
+          category: classifyText(title + " " + summary, p.siteName || ""),
+          tags: extractTags(title, summary),
+          review: false,
+          score: 90,
+          addedAt: new Date().toISOString(),
+          isLive: true
+        };
+      });
+    });
+  });
+  return Promise.all(promises).then(function(arrs) {
+    var flat = [];
+    arrs.forEach(function(arr) { flat = flat.concat(arr || []); });
+    /* 标题去重 + 安全主题过滤（双保险） */
+    var seen = {}, out = [];
+    flat.forEach(function(it) {
+      if (!it.title || seen[it.title]) return;
+      seen[it.title] = true;
+      if (isSafetyRelevant(it.title, it.summary)) out.push(it);
+    });
+    return out;
+  }).catch(function(err) {
+    console.warn("博查实时抓取失败，回退 RSS 通道:", err);
+    return fetchLiveRSS();
   });
 }
 
@@ -2635,20 +2690,22 @@ function fetchLiveMaterials() {
 // v5.14.3：按用户所选语气生成对应语气指令——四档风格拉开差异，正式宣传 = 新闻通稿风格
       function getToneRule(tone) {
         var t = String(tone || "");
+        /* v5.15：所有档位统一附加"变化性"要求——同一语气下每次写作的开头切入方式和结构排布都要不同，避免雷同 */
+        var variety = "。注意：每次写作的开头切入方式要有变化（可在场景故事、数据引述、提问式、新闻事件式之间变换），段落结构和排布也不要重复固定套路，避免与以往同语气文章雷同";
         /* 匹配顺序：接地气优先（"接地气、稳妥"选项含"稳妥"但主基调是接地气） */
         if (t.indexOf("接地气") !== -1) {
-          return "语言要接地气，像老师傅跟工友聊天，不要官八股。结构上：开头用真实场景或身边故事切入（如'老张昨天那班……'），多用口语短句、比喻和具体细节，让职工读起来像听人拉家常";
+          return "语言要接地气，像老师傅跟工友聊天，不要官八股。结构上：开头用真实场景或身边故事切入（如'老张昨天那班……'），多用口语短句、比喻和具体细节，让职工读起来像听人拉家常" + variety;
         }
         if (t.indexOf("正式") !== -1) {
-          return "语言正式、规范，采用官方新闻报道（通稿）风格：开头用导语式写法，一句话点明事件、时间、主体（如'XX省应急管理厅近日部署……''国家矿山安全监察局日前印发……'）；正文用第三人称客观叙述，多用规范书面语和官方表述（'进一步''切实''扎实推进''坚决防范'）；结构层次分明、逻辑清晰；事实、数据、文件文号准确引用。避免口语化、网络用语、玩笑调侃、第一人称闲聊";
+          return "语言正式、规范，采用官方新闻报道（通稿）风格：开头用导语式写法，一句话点明事件、时间、主体（如'XX省应急管理厅近日部署……''国家矿山安全监察局日前印发……'）；正文用第三人称客观叙述，多用规范书面语和官方表述（'进一步''切实''扎实推进''坚决防范'）；结构层次分明、逻辑清晰；事实、数据、文件文号准确引用。避免口语化、网络用语、玩笑调侃、第一人称闲聊" + variety;
         }
         if (t.indexOf("温馨") !== -1) {
-          return "语气温暖、贴心，像工会干部和职工谈心：多用关怀和鼓励性表达（'工友们''大家伙儿'），关心职工健康与家庭，结尾落在温情叮嘱上；避免生硬说教";
+          return "语气温暖、贴心，像工会干部和职工谈心：多用关怀和鼓励性表达（'工友们''大家伙儿'），关心职工健康与家庭，结尾落在温情叮嘱上；避免生硬说教" + variety;
         }
         if (t.indexOf("班前会") !== -1) {
-          return "语气简洁有力，像班组长在班前会上的叮嘱：短句、提醒式、直击要点，每段尽量短，多用祈使句（'进班先查三件事''发现隐患立即报告'），不用长句和铺垫";
+          return "语气简洁有力，像班组长在班前会上的叮嘱：短句、提醒式、直击要点，每段尽量短，多用祈使句（'进班先查三件事''发现隐患立即报告'），不用长句和铺垫" + variety;
         }
-        return "语言要接地气，像老师傅跟工友聊天，不要官八股";
+        return "语言要接地气，像老师傅跟工友聊天，不要官八股" + variety;
       }
 
 // 构建 AI 系统提示词（角色设定 + 输出格式约束 + 搜索结果注入）
