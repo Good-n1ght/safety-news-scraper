@@ -1990,7 +1990,7 @@ function fetchLiveMaterials() {
     return fetchWithTimeout("https://api.bocha.cn/v1/web-search", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + bochaKey },
-      body: JSON.stringify({ query: topic, count: 6, freshness: "oneWeek" })
+      body: JSON.stringify({ query: topic, count: 3, freshness: "oneWeek" })
     }, 15000)
     .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(function(data) {
@@ -2071,10 +2071,11 @@ function fetchLiveMaterials() {
           console.log("数据源已切换，旧缓存已清理(" + MATERIALS_LS_KEY + ")");
         }
 
-        /* v5.15.2：实时抓取（博查搜索）6 小时窗口——频繁点按钮不重复消耗博查额度（48 次/抓） */
+        /* v5.15.3：实时抓取（博查搜索）24 小时窗口——每天最多抓 1 次，8 词×3 条=24 次/天，
+           加生成搜索约 5 次/天，月消耗约 870 次，1000 次免费额度留有余量 */
         var liveFetchedAt = 0;
         try { liveFetchedAt = parseInt(localStorage.getItem("live_fetched_at") || "0", 10) || 0; } catch (e) { liveFetchedAt = 0; }
-        var needLive = !liveFetchedAt || (Date.now() - liveFetchedAt) > 6 * 60 * 60 * 1000;
+        var needLive = !liveFetchedAt || (Date.now() - liveFetchedAt) > 24 * 60 * 60 * 1000;
         var livePromise = needLive
           ? fetchLiveMaterials().then(function(items) {
               try { localStorage.setItem("live_fetched_at", String(Date.now())); } catch (e) {}
