@@ -1985,7 +1985,8 @@ function fetchLiveMaterials() {
   var bochaKey = "";
   try { bochaKey = localStorage.getItem("bocha_api_key") || ""; } catch (e) { bochaKey = ""; }
   if (!bochaKey) return fetchLiveRSS();
-  var promises = BOCHA_LIVE_TOPICS.map(function(topic) {
+  /* v5.15.2：单词独立容错（限流 429 等 2 秒重试一次；仍失败只跳过该词） */
+  function fetchTopic(topic, allowRetry) {
     return fetchWithTimeout("https://api.bocha.cn/v1/web-search", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + bochaKey },
@@ -2014,11 +2015,31 @@ function fetchLiveMaterials() {
           isLive: true
         };
       });
+    })
+    .catch(function(e) {
+      if (allowRetry && String(e.message || "").indexOf("429") !== -1) {
+        console.warn("博查限流，2 秒后重试: " + topic);
+        return new Promise(function(res) {
+          setTimeout(function() { res(fetchTopic(topic, false)); }, 2000);
+        });
+      }
+      console.warn("博查词失败跳过: " + topic, e.message);
+      return [];
     });
-  });
-  return Promise.all(promises).then(function(arrs) {
-    var flat = [];
-    arrs.forEach(function(arr) { flat = flat.concat(arr || []); });
+  }
+  var promises = BOCHA_LIVE_TOPICS.map(function(topic) { return fetchTopic(topic, true); });
+  /* v5.15.2：分批并发（每批 2 个）——8 个词全并发会触发博查限流（429）导致整批失败 */
+  var flat = [];
+  function runBatch(list, size) {
+    if (!list.length) return Promise.resolve(flat);
+    var batch = list.slice(0, size);
+    var rest = list.slice(size);
+    return Promise.all(batch).then(function(arrs) {
+      arrs.forEach(function(arr) { flat = flat.concat(arr || []); });
+      return runBatch(rest, size);
+    });
+  }
+  return runBatch(promises, 2).then(function() {
     /* 标题去重 + 安全主题过滤（双保险；开滦官网内容直接保留——site: 限定结果信任其相关性） */
     var seen = {}, out = [];
     flat.forEach(function(it) {
@@ -2050,9 +2071,16 @@ function fetchLiveMaterials() {
           console.log("数据源已切换，旧缓存已清理(" + MATERIALS_LS_KEY + ")");
         }
 
-        /* v5.14：实时抓取中国安全类 RSS（rss2json 通道，用户网络可访问）——
-           素材库管道在美国服务器抓中国站受限，前端实时通道不受此限制 */
-        var livePromise = fetchLiveMaterials().catch(function() { return []; });
+        /* v5.15.2：实时抓取（博查搜索）6 小时窗口——频繁点按钮不重复消耗博查额度（48 次/抓） */
+        var liveFetchedAt = 0;
+        try { liveFetchedAt = parseInt(localStorage.getItem("live_fetched_at") || "0", 10) || 0; } catch (e) { liveFetchedAt = 0; }
+        var needLive = !liveFetchedAt || (Date.now() - liveFetchedAt) > 6 * 60 * 60 * 1000;
+        var livePromise = needLive
+          ? fetchLiveMaterials().then(function(items) {
+              try { localStorage.setItem("live_fetched_at", String(Date.now())); } catch (e) {}
+              return items;
+            }).catch(function() { return []; })
+          : Promise.resolve([]);
 
         fetchWithTimeout(GIST_URL + "?_t=" + Date.now(), null, 30000)
           .then(function(resp) {
