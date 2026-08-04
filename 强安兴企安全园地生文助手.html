@@ -1935,7 +1935,8 @@ function isSafetyRelevant(title, summary) {
 
 // v5.15：实时素材主通道 = 博查按安全主题词搜索（用户已有博查 Key，天生安全主题、数量多、摘要长）；
 // RSS 通用频道降级为回退（无 Key 或博查失败时用）
-var BOCHA_LIVE_TOPICS = ["煤矿安全 班组 班前会", "安全生产 隐患排查 应急", "防汛 高温 职工健康", "矿山 事故 警示 演练", "职业病 尘肺 体检 劳动保护"];
+/* v5.15.1：开滦官网内容优先（site: 限定搜索开滦要闻/会议精神/安全动态），再是通用安全主题词 */
+var BOCHA_LIVE_TOPICS = ["site:kailuan.com.cn 安全", "site:kailuan.com.cn 会议 精神", "开滦集团 安全生产 部署", "煤矿安全 班组 班前会", "安全生产 隐患排查 应急", "防汛 高温 职工健康", "矿山 事故 警示 演练", "职业病 尘肺 体检 劳动保护"];
 
 function fetchLiveRSS() {
   var todayISO = new Date().toISOString().slice(0, 10);
@@ -2018,12 +2019,12 @@ function fetchLiveMaterials() {
   return Promise.all(promises).then(function(arrs) {
     var flat = [];
     arrs.forEach(function(arr) { flat = flat.concat(arr || []); });
-    /* 标题去重 + 安全主题过滤（双保险） */
+    /* 标题去重 + 安全主题过滤（双保险；开滦官网内容直接保留——site: 限定结果信任其相关性） */
     var seen = {}, out = [];
     flat.forEach(function(it) {
       if (!it.title || seen[it.title]) return;
       seen[it.title] = true;
-      if (isSafetyRelevant(it.title, it.summary)) out.push(it);
+      if (isSafetyRelevant(it.title, it.summary) || String(it.sourceUrl || "").indexOf("kailuan.com.cn") !== -1) out.push(it);
     });
     return out;
   }).catch(function(err) {
