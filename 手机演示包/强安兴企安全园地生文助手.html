@@ -1990,7 +1990,7 @@ function fetchLiveMaterials() {
     return fetchWithTimeout("https://api.bocha.cn/v1/web-search", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + bochaKey },
-      body: JSON.stringify({ query: topic, count: 3, freshness: "oneWeek" })
+      body: JSON.stringify({ query: topic, count: 2, freshness: "oneWeek" })
     }, 15000)
     .then(function(r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(function(data) {
@@ -2071,11 +2071,12 @@ function fetchLiveMaterials() {
           console.log("数据源已切换，旧缓存已清理(" + MATERIALS_LS_KEY + ")");
         }
 
-        /* v5.15.3：实时抓取（博查搜索）24 小时窗口——每天最多抓 1 次，8 词×3 条=24 次/天，
-           加生成搜索约 5 次/天，月消耗约 870 次，1000 次免费额度留有余量 */
+        /* v5.15.4：实时抓取（博查搜索）72 小时窗口——博查额度为周期包（1000 次/约 3 个月，非每月），
+           剩余 915 次 ÷ 78 天 ≈ 11 次/天预算。实时素材 3 天 1 次 × 8 词 × 2 条 = 16 次/3 天 ≈ 5.3 次/天，
+           加生成搜索 ~5 次/天 ≈ 10 次/天，78 天约 780 次，留 135 余量 */
         var liveFetchedAt = 0;
         try { liveFetchedAt = parseInt(localStorage.getItem("live_fetched_at") || "0", 10) || 0; } catch (e) { liveFetchedAt = 0; }
-        var needLive = !liveFetchedAt || (Date.now() - liveFetchedAt) > 24 * 60 * 60 * 1000;
+        var needLive = !liveFetchedAt || (Date.now() - liveFetchedAt) > 72 * 60 * 60 * 1000;
         var livePromise = needLive
           ? fetchLiveMaterials().then(function(items) {
               try { localStorage.setItem("live_fetched_at", String(Date.now())); } catch (e) {}
