@@ -2657,8 +2657,21 @@ function fetchLiveMaterials() {
                用「选中素材的摘要 + 素材库相关素材（话题词 + 标题关键词扩展匹配）」直接喂 AI */
             var kws = [];
             var kwTopic = String(topic || "").replace(/\s+/g, "");
-            if (kwTopic) kws.push(kwTopic);
-            /* 从选中素材标题提取关键词，扩大匹配面（如"六必讲"素材可提取出入井/班前/饮酒等词） */
+            var STOP = "的了吗呢啊一不要是在让把从对给和与及也都就这那我你他它们个吧哦最很更越想能会被使将正即又还或但而之其各每向于等";
+            /* v5.18.1：主题词拆成双字词加入匹配（整串作为单个词几乎无法命中，拆词后命中率大增） */
+            (function() {
+              var chars = "";
+              for (var ci = 0; ci < kwTopic.length; ci++) {
+                var cc = kwTopic.charCodeAt(ci);
+                if ((cc >= 0x4e00 && cc <= 0x9fff) || (cc >= 48 && cc <= 57)) chars += kwTopic[ci];
+              }
+              var seen = {};
+              for (var i = 0; i < chars.length - 1 && kws.length < 10; i++) {
+                var w = chars.substring(i, i + 2);
+                if (STOP.indexOf(w) === -1 && !seen[w]) { seen[w] = true; kws.push(w); }
+              }
+            })();
+            /* 从选中素材标题提取关键词补充（词上限放宽到 14，避免标题开头碎词占满名额） */
             (function() {
               var t = selectedMaterial.title || "";
               var chars = "";
@@ -2666,9 +2679,8 @@ function fetchLiveMaterials() {
                 var cc = t.charCodeAt(ci);
                 if ((cc >= 0x4e00 && cc <= 0x9fff) || (cc >= 48 && cc <= 57)) chars += t[ci];
               }
-              var STOP = "的了吗呢啊一不要是在让把从对给和与及也都就这那我你他它们个吧哦最很更越想能会被使将正即又还或但而之其各每向于等";
               var seen = {};
-              for (var i = 0; i < chars.length - 1 && kws.length < 8; i++) {
+              for (var i = 0; i < chars.length - 1 && kws.length < 14; i++) {
                 var w = chars.substring(i, i + 2);
                 if (STOP.indexOf(w) === -1 && !seen[w]) { seen[w] = true; kws.push(w); }
               }
@@ -2680,7 +2692,12 @@ function fetchLiveMaterials() {
                   var hits = kws.filter(function(k) { return (m.title || "").indexOf(k) !== -1 || (m.summary || "").indexOf(k) !== -1 || (m.tags || []).join(",").indexOf(k) !== -1; }).length;
                   return { m: m, hits: hits };
                 })
-                .filter(function(x) { return x.m.id !== selectedMaterial.id && x.hits > 0; })
+                /* v5.18.1：补充素材必须主题强相关——同分类且至少 2 词命中，或至少 3 词命中（跨分类）；
+                   避免"矿山""安全"等泛词把不相关主题素材混进来喧宾夺主 */
+                .filter(function(x) {
+                  if (x.m.id === selectedMaterial.id) return false;
+                  return (x.m.category === selectedMaterial.category && x.hits >= 2) || x.hits >= 3;
+                })
                 .sort(function(a, b) { return b.hits - a.hits; })
                 .slice(0, 3)
                 .map(function(x) {
