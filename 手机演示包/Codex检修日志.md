@@ -218,6 +218,11 @@ AIGC:
 
 ---
 
+## 2026/8/5 v5.17.1 DDG 来源标记
+
+- 8/5 验证：新管道已生效（素材库来源 30+ 多样），DDG 素材缺 source 标记
+- 修复：链接域名提取 source（失败标 DuckDuckGo），单测 2/2
+
 ## 2026/8/4 v5.17 管道 DuckDuckGo 免费搜索层
 
 - 查证 2026 开源主流：SearXNG（自建永久免费）+ DuckDuckGo（免 Key）

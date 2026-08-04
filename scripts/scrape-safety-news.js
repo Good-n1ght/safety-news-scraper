@@ -339,7 +339,13 @@ async function searchDuckDuckGo(query) {
         try { link = decodeURIComponent(uddg); } catch (e) { /* 保持原链接 */ }
       }
       const summary = $(el).find(".result__snippet").first().text().replace(/\s+/g, " ").trim() || title;
-      results.push({ title, link, summary });
+      /* v5.17.1：来源标记（从解码后的真实链接提取域名，失败标 DuckDuckGo） */
+      let source = "DuckDuckGo";
+      try {
+        const u = new URL(link);
+        if (u.hostname) source = u.hostname.replace(/^www\./, "");
+      } catch (e) { /* 保持 DuckDuckGo */ }
+      results.push({ title, link, summary, source });
     });
 
     console.log(`[DDG] ${query}: ${results.length} 条`);
