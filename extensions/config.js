@@ -175,6 +175,8 @@ var MODEL_MAP = {
 
 /* 品牌分组 */
 var MODEL_BRANDS = [
+  /* v5.21：免费模型集中组——全部走 OpenRouter 免费池（需注册 openrouter.ai 免费 Key），0 成本 */
+  { name: "OpenRouter 免费", models: ["google/gemma-4-26b-a4b-it:free","nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free","nvidia/nemotron-nano-9b-v2:free","cohere/north-mini-code:free"] },
   { name: "DeepSeek",     models: ["deepseek-chat","deepseek-v4-flash","deepseek-v4-pro","deepseek-chat-v3.1","deepseek-r1-0528","deepseek/deepseek-v4-flash","deepseek/deepseek-v4-pro","deepseek/deepseek-chat-v3-0324","deepseek/deepseek-chat-v3.1","deepseek/deepseek-v3.1-terminus","deepseek/deepseek-v3.2-exp","deepseek/deepseek-r1","deepseek/deepseek-r1-0528"] },
   { name: "OpenAI",       models: ["openai/gpt-5.6-luna","openai/gpt-5.6-luna-pro","openai/gpt-5.6-sol","openai/gpt-5.6-sol-pro","openai/gpt-5.5","openai/gpt-5.5-pro","openai/gpt-5.4","openai/gpt-5.4-pro"] },
   { name: "Anthropic",    models: ["anthropic/claude-opus-4.8","anthropic/claude-opus-4.8-fast","anthropic/claude-opus-4.7","anthropic/claude-opus-4.7-fast","anthropic/claude-opus-4.6","anthropic/claude-sonnet-4.5","anthropic/claude-sonnet-4","anthropic/claude-fable-5"] },
